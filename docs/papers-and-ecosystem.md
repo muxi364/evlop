@@ -33,6 +33,8 @@
 | **TextGrad** | *TextGrad: Automatic "Differentiation" via Text* (Yuksekgonul et al., Nature 2025, `arXiv:2406.07496`) | 通过文本梯度（Textual Gradients）在复合 AI 系统中反向传播批评并更新提示词 | **[O] Optimize**：利用验证反馈更新基因的 `strategy` 与适应度权重 |
 | **Voyager** | *Voyager: An Open-Ended Embodied Agent with Large Language Models* (Wang et al., 2023, `arXiv:2305.16291`) | 终身学习与可执行技能库（Skill Library）的持续积累与检索复用 | **[P] Promote**：`evlop export-skill` 将成熟基因固化为可复用的 `SKILL.md` 模块 |
 | **ADAS** | *Automated Design of Agentic Systems* (Hu et al., ICLR 2025, `arXiv:2408.08435`) | 元智能体（Meta-Agent）在代码空间自动搜索、评估并演进新的 Agent 拓扑与规则 | **[P] Persist**：`evlop evolve` 自动重写宿主 Agent 的 `AGENTS.md` / `CLAUDE.md` 指令层 |
+| **Darwin Gödel Machine (DGM)** | *Darwin Gödel Machine: Open-Ended Evolution of Self-Improving Agents* (Sakana AI & Academic Collaborators, 2025–2026) | 冻结基座模型权重，用经验基准（SWE-bench）替代哥德尔形式化证明，递归重写 Agent 自身脚手架代码并维护谱系树，**将 SWE-bench 从 20.0% 自主演进至 50.0%** | **[V] + [O] + [P]**：经验适应度门禁 + 谱系归档（防局部最优陷阱） |
+| **AlphaEvolve** | *AlphaEvolve: A Gemini-Powered Coding Agent for Designing Advanced Algorithms* (Google DeepMind, 2025–2026) | 结合进化搜索与确定性评估器（编译器/性能剖析器），自主发现打破 56 年 Strassen 记录的 $4 \times 4$ 复数矩阵乘法算法并优化数据中心调度 | **[V] Verify & [O] Optimize**：零容错确定性验证评估器驱动的代码与策略演化 |
 
 ---
 
