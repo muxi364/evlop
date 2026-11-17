@@ -96,8 +96,18 @@ python -m evlop log \
 # Step 4 & 5 [O & P - Optimize & Promote]: 去重、计算适应度，并将高分基因编译进 AGENTS.md 与 CLAUDE.md
 python -m evlop evolve --target AGENTS.md,CLAUDE.md
 
-# Step 5+ [P - Skill Incubation]: 将高适应度基因一键导出为独立的 SKILL.md 插件
-python -m evlop export-skill --gene-id gene-explicit-utf-8-encoding-on-cross-platform --out-dir skills
+# Step 5+ [P - Voyager Skill & Tool Synthesis]: 将高适应度基因导出为独立 SKILL.md 并自动合成可执行脚本 scripts/run_strategy.py
+python -m evlop export-skill --gene-id gene-explicit-utf-8-encoding-on-cross-platform --out-dir skills --synthesize-script
+
+# Step 6 [DGM Mode - Phylogenetic Mutation & Lineage Tree]: 基于父代基因派生下一代变异并输出进化谱系树
+python -m evlop mutate \
+  --parent-id gene-execution-verified-patching-gate \
+  --title "Latency-Profiled Execution Verification Gate" \
+  --strategy "Run `python -m evlop verify \"python -m unittest discover -s tests -v\"` to capture both exit_code==0 and duration_ms" \
+  --reason "AlphaEvolve multi-metric latency profiling upgrade" \
+  --agent-id "architect-agent-1"
+
+python -m evlop lineage --mermaid --out docs/LINEAGE.md
 ```
 
 ### 3. 让其他 Agent 立刻接入 EVLOP

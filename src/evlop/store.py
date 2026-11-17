@@ -1,12 +1,29 @@
-"""Workspace persistence store (.evlop/) and keyword+fitness gene recall."""
+"""Workspace persistence store (.evlop/) with atomic swarm-safe writes and keyword+fitness recall."""
 
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
+import uuid
 
 from evlop.fitness import tokenize
 from evlop.models import Episode, EvlopConfig, Gene, VerifyRecord
+
+
+def _atomic_write_text(target: Path, content: str) -> None:
+    """Write text atomically via a sibling temporary file and os.replace."""
+    target.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = target.parent / f".{target.name}.{uuid.uuid4().hex[:8]}.tmp"
+    try:
+        tmp_path.write_text(content, encoding="utf-8")
+        os.replace(str(tmp_path), str(target))
+    finally:
+        if tmp_path.exists():
+            try:
+                tmp_path.unlink()
+            except OSError:
+                pass
 
 
 class EvlopStore:
@@ -38,17 +55,15 @@ class EvlopStore:
         return EvlopConfig.from_dict(data)
 
     def save_config(self, config: EvlopConfig) -> None:
-        self.evlop_dir.mkdir(parents=True, exist_ok=True)
-        self.config_file.write_text(
+        _atomic_write_text(
+            self.config_file,
             json.dumps(config.to_dict(), indent=2, ensure_ascii=False) + "\n",
-            encoding="utf-8",
         )
 
     def save_verify(self, record: VerifyRecord) -> None:
-        self.evlop_dir.mkdir(parents=True, exist_ok=True)
-        self.verify_file.write_text(
+        _atomic_write_text(
+            self.verify_file,
             json.dumps(record.to_dict(), indent=2, ensure_ascii=False) + "\n",
-            encoding="utf-8",
         )
 
     def load_last_verify(self) -> VerifyRecord | None:
@@ -80,11 +95,10 @@ class EvlopStore:
         return [Gene.from_dict(item) for item in raw]
 
     def save_genes(self, genes: list[Gene]) -> None:
-        self.evlop_dir.mkdir(parents=True, exist_ok=True)
         payload = [g.to_dict() for g in genes]
-        self.genes_file.write_text(
+        _atomic_write_text(
+            self.genes_file,
             json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
-            encoding="utf-8",
         )
 
     def recall_genes(self, query: str, top_k: int = 5) -> list[Gene]:

@@ -7,7 +7,8 @@ description: "Auto-evolved EVLOP skill for [testing] Execution-Verified Patching
 
 > **EVLOP Auto-Evolved Skill** (`gene-execution-verified-patching-gate`)
 > - **Category:** `testing`
-> - **Darwinian Fitness:** `1.3466`
+> - **Generation:** `1` (Root Ancestor)
+> - **Darwinian Fitness:** `1.3458`
 > - **Empirical Track Record:** `1` verified successes / `0` failures
 
 ## When to Trigger
@@ -23,6 +24,12 @@ Run python -m evlop verify '<test-cmd>' and confirm exit_code == 0 before conclu
 ## Anti-Pattern (What to Avoid)
 
 - Self-reporting success based solely on reading the code diff
+
+## Synthesized Executable Tool (Voyager Mode)
+
+This skill includes an auto-synthesized executable script:
+- Inspect metadata: `python skills/auto-gene-execution-verified-patching-gate/scripts/run_strategy.py --info`
+- Execute strategy command: `python skills/auto-gene-execution-verified-patching-gate/scripts/run_strategy.py --execute`
 
 ## Evolution Lifecycle
 

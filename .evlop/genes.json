@@ -1,5 +1,26 @@
 [
   {
+    "id": "gene-latency-profiled-execution-verification-ga",
+    "title": "Latency-Profiled Execution Verification Gate",
+    "category": "testing",
+    "trigger": "Any code modification, bug fix, or refactoring task",
+    "strategy": "Run python -m unittest discover -s tests -v via evlop verify to capture exit_code==0 and duration_ms",
+    "anti_pattern": "Self-reporting success based solely on reading the code diff",
+    "success_count": 1,
+    "failure_count": 0,
+    "verified_gate": true,
+    "created_at": "2026-11-17T23:44:56.335604+00:00",
+    "last_used_at": "2026-11-17T23:44:56.335604+00:00",
+    "status": "promoted",
+    "fitness": 1.3466,
+    "parent_id": "gene-execution-verified-patching-gate",
+    "generation": 2,
+    "mutation_reason": "AlphaEvolve latency-aware verification",
+    "contributors": [
+      "evlop-v2-architect"
+    ]
+  },
+  {
     "id": "gene-execution-verified-patching-gate",
     "title": "Execution-Verified Patching Gate",
     "category": "testing",
@@ -12,7 +33,11 @@
     "created_at": "2026-11-17T23:09:30.719930+00:00",
     "last_used_at": "2026-11-17T23:09:30.719930+00:00",
     "status": "promoted",
-    "fitness": 1.3466
+    "fitness": 1.3458,
+    "parent_id": "",
+    "generation": 1,
+    "mutation_reason": "",
+    "contributors": []
   },
   {
     "id": "gene-subagent-context-isolation-for-deep-explor",
@@ -27,7 +52,11 @@
     "created_at": "2026-11-17T23:09:31.410709+00:00",
     "last_used_at": "2026-11-17T23:09:31.410709+00:00",
     "status": "promoted",
-    "fitness": 1.3466
+    "fitness": 1.3458,
+    "parent_id": "",
+    "generation": 1,
+    "mutation_reason": "",
+    "contributors": []
   },
   {
     "id": "gene-explicit-utf-8-encoding-on-cross-platform",
@@ -42,6 +71,10 @@
     "created_at": "2026-11-17T23:09:32.069483+00:00",
     "last_used_at": "2026-11-17T23:09:32.069483+00:00",
     "status": "promoted",
-    "fitness": 1.3466
+    "fitness": 1.3458,
+    "parent_id": "",
+    "generation": 1,
+    "mutation_reason": "",
+    "contributors": []
   }
 ]

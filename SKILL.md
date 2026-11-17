@@ -64,8 +64,14 @@ python -m evlop status
    python -m evlop evolve --target AGENTS.md,CLAUDE.md
    ```
    This updates the bounded `<!-- EVLOP:START -->...<!-- EVLOP:END -->` block (capped at top 15 genes by fitness score).
-2. **Incubate Mature Genes into Standalone Skills:**
-   When a gene reaches high empirical validation ($S \ge 2$), export it as a standalone skill folder:
+2. **Incubate Mature Genes into Standalone Skills & Executable Tools (Voyager Mode):**
+   When a gene reaches high empirical validation, export it as a standalone skill folder (pass `--synthesize-script` to also generate an executable `scripts/run_strategy.py` helper tool):
    ```bash
-   python -m evlop export-skill --gene-id <gene-id> --out-dir skills
+   python -m evlop export-skill --gene-id <gene-id> --out-dir skills --synthesize-script
+   ```
+3. **Evolve Child Gene Mutations & Inspect Phylogenetic Lineage (DGM Mode):**
+   When refining an existing rule into a better Next-Gen strategy without destroying the ancestor in the archive:
+   ```bash
+   python -m evlop mutate --parent-id <parent-gene-id> --title "<New Gen Title>" --strategy "<Improved strategy>" --reason "<Why mutated>" --agent-id "<agent-name>"
+   python -m evlop lineage --mermaid --out docs/LINEAGE.md
    ```

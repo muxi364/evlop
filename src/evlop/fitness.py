@@ -1,4 +1,4 @@
-"""Darwinian fitness scoring, Jaccard deduplication/merge, and lifecycle governance."""
+"""Darwinian fitness scoring, Jaccard deduplication/merge, and DGM lineage governance."""
 
 from __future__ import annotations
 
@@ -68,7 +68,7 @@ def compute_fitness(gene: Gene, config: EvlopConfig, now: datetime | None = None
 
 
 def _merge_two_genes(primary: Gene, duplicate: Gene) -> Gene:
-    """Merge duplicate gene statistics and retain richer strategy text."""
+    """Merge duplicate gene statistics and retain richer strategy text and combined swarm contributors."""
     richer_strategy = (
         duplicate.strategy if len(duplicate.strategy) > len(primary.strategy) else primary.strategy
     )
@@ -83,6 +83,7 @@ def _merge_two_genes(primary: Gene, duplicate: Gene) -> Gene:
         else (primary.created_at or duplicate.created_at)
     )
     last_used_at = max(primary.last_used_at, duplicate.last_used_at)
+    combined_contributors = sorted(set(primary.contributors) | set(duplicate.contributors))
 
     return Gene(
         id=primary.id,
@@ -98,6 +99,10 @@ def _merge_two_genes(primary: Gene, duplicate: Gene) -> Gene:
         last_used_at=last_used_at,
         status=primary.status,
         fitness=primary.fitness,
+        parent_id=primary.parent_id or duplicate.parent_id,
+        generation=max(primary.generation, duplicate.generation),
+        mutation_reason=primary.mutation_reason or duplicate.mutation_reason,
+        contributors=combined_contributors,
     )
 
 
@@ -108,8 +113,8 @@ def govern_genes(
     similarity_threshold: float = 0.65,
 ) -> list[Gene]:
     """
-    Deduplicate near-identical genes, recalculate Darwinian fitness scores,
-    update status ('promoted', 'candidate', 'archived'), and sort by fitness descending.
+    Deduplicate near-identical genes (while preserving explicit parent-child DGM mutations),
+    recalculate Darwinian fitness scores, update status, and sort by fitness descending.
     """
     merged: list[Gene] = []
     for incoming in genes:
@@ -119,6 +124,9 @@ def govern_genes(
             if existing.id == incoming.id:
                 matched_idx = idx
                 break
+            # DGM Lineage Rule: explicit parent-child mutations coexist in the phylogenetic archive
+            if incoming.parent_id == existing.id or existing.parent_id == incoming.id:
+                continue
             sig_existing = f"{existing.title} {existing.trigger}"
             if jaccard_similarity(sig_incoming, sig_existing) >= similarity_threshold:
                 matched_idx = idx

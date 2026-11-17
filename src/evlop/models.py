@@ -1,8 +1,8 @@
-"""Core data structures for EVLOP episodes, genes, verification records, and configuration."""
+"""Core data structures for EVLOP v2.0 episodes, genes, lineage trees, verification records, and config."""
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 import hashlib
 import re
@@ -51,6 +51,7 @@ class VerifyRecord:
     passed: bool
     timestamp: str
     output_snippet: str
+    duration_ms: float = 0.0
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -63,6 +64,7 @@ class VerifyRecord:
             passed=bool(data.get("passed", False)),
             timestamp=str(data.get("timestamp", "")),
             output_snippet=str(data.get("output_snippet", "")),
+            duration_ms=float(data.get("duration_ms", 0.0)),
         )
 
 
@@ -77,6 +79,7 @@ class Episode:
     verified: bool
     verify_cmd: str
     gene_id: str
+    agent_id: str = "default-agent"
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -93,6 +96,7 @@ class Episode:
             verified=bool(data.get("verified", False)),
             verify_cmd=str(data.get("verify_cmd", "")),
             gene_id=str(data.get("gene_id", "")),
+            agent_id=str(data.get("agent_id", "default-agent")),
         )
 
 
@@ -111,6 +115,10 @@ class Gene:
     last_used_at: str = ""
     status: str = "candidate"
     fitness: float = 0.0
+    parent_id: str = ""
+    generation: int = 1
+    mutation_reason: str = ""
+    contributors: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         now = utc_now_iso()
@@ -124,6 +132,8 @@ class Gene:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Gene:
+        raw_contrib = data.get("contributors", [])
+        contributors = [str(c) for c in raw_contrib] if isinstance(raw_contrib, list) else []
         return cls(
             id=str(data.get("id", "")),
             title=str(data.get("title", "")),
@@ -138,4 +148,8 @@ class Gene:
             last_used_at=str(data.get("last_used_at", "")),
             status=str(data.get("status", "candidate")),
             fitness=float(data.get("fitness", 0.0)),
+            parent_id=str(data.get("parent_id", "")),
+            generation=int(data.get("generation", 1)),
+            mutation_reason=str(data.get("mutation_reason", "")),
+            contributors=contributors,
         )
