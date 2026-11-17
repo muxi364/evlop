@@ -1,0 +1,7 @@
+{
+  "command": "python -m unittest discover -s tests -p test_core.py -v",
+  "exit_code": 0,
+  "passed": true,
+  "timestamp": "2026-11-17T23:09:30.123282+00:00",
+  "output_snippet": "test_duplicate_gene_merge (test_core.TestEvlopCore.test_duplicate_gene_merge) ... ok\ntest_fitness_formula_and_unverified_gate (test_core.TestEvlopCore.test_fitness_formula_and_unverified_gate) ... ok\ntest_future_timestamp_clamped_and_decay_works (test_core.TestEvlopCore.test_future_timestamp_clamped_and_decay_works) ... ok\ntest_store_roundtrip_and_recall (test_core.TestEvlopCore.test_store_roundtrip_and_recall) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.084s\n\nOK"
+}
