@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
+import re
 
 from evlop.models import Gene
 
 MARKER_START = "<!-- EVLOP:START -->"
 MARKER_END = "<!-- EVLOP:END -->"
+_START_LINE_RE = re.compile(r"^[ \t]*<!-- EVLOP:START -->[ \t]*$", re.MULTILINE)
+_END_LINE_RE = re.compile(r"^[ \t]*<!-- EVLOP:END -->[ \t]*$", re.MULTILINE)
 
 
 def render_genes_markdown(genes: list[Gene], max_genes: int = 15) -> str:
@@ -44,7 +48,7 @@ def render_genes_markdown(genes: list[Gene], max_genes: int = 15) -> str:
 
 
 def inject_markdown_file(file_path: Path, genes: list[Gene], max_genes: int = 15) -> None:
-    """Inject or update the EVLOP genome block inside a Markdown file."""
+    """Inject or update the EVLOP genome block inside a Markdown file matching standalone marker lines only."""
     block = render_genes_markdown(genes, max_genes=max_genes)
     if not file_path.exists():
         header = f"# {file_path.stem} — Agent Instructions\n\n"
@@ -52,32 +56,34 @@ def inject_markdown_file(file_path: Path, genes: list[Gene], max_genes: int = 15
         return
 
     existing = file_path.read_text(encoding="utf-8")
-    start_idx = existing.find(MARKER_START)
-    end_idx = existing.find(MARKER_END)
+    m_start = _START_LINE_RE.search(existing)
+    m_end = _END_LINE_RE.search(existing)
 
-    if start_idx != -1 and end_idx != -1 and start_idx < end_idx:
-        updated = (
-            existing[:start_idx]
-            + block
-            + existing[end_idx + len(MARKER_END) :]
-        )
+    if m_start and m_end and m_start.start() < m_end.start():
+        updated = existing[: m_start.start()] + block + existing[m_end.end() :]
     else:
-        cleaned = existing.replace(MARKER_START, "").replace(MARKER_END, "").rstrip()
+        cleaned = _START_LINE_RE.sub("", existing)
+        cleaned = _END_LINE_RE.sub("", cleaned).rstrip()
         updated = f"{cleaned}\n\n{block}\n" if cleaned else f"{block}\n"
 
     file_path.write_text(updated, encoding="utf-8")
 
 
 def export_gene_to_skill(gene: Gene, skills_root: Path) -> Path:
-    """Promote a high-fitness Gene into a standalone SKILL.md directory."""
+    """Promote a high-fitness Gene into a standalone SKILL.md directory with safely escaped YAML frontmatter."""
     skill_name = f"auto-{gene.id}"
     skill_dir = Path(skills_root) / skill_name
     skill_dir.mkdir(parents=True, exist_ok=True)
     skill_file = skill_dir / "SKILL.md"
 
+    one_line_title = " ".join(gene.title.splitlines()).strip()
+    one_line_trigger = " ".join(gene.trigger.splitlines()).strip()
+    raw_desc = f"Auto-evolved EVLOP skill for [{gene.category}] {one_line_title}. Activate when encountering: {one_line_trigger}"
+    safe_yaml_desc = json.dumps(raw_desc, ensure_ascii=False)
+
     content = f"""---
 name: {skill_name}
-description: "Auto-evolved EVLOP skill for [{gene.category}] {gene.title}. Activate when encountering: {gene.trigger}"
+description: {safe_yaml_desc}
 ---
 
 # {gene.title}
@@ -105,7 +111,7 @@ Activate this skill whenever you encounter the following symptom, file pattern, 
 
 If applying this skill resolves the task and passes `evlop verify`, reinforce it via:
 ```bash
-python -m evlop log --title "{gene.title}" --task "Applied {skill_name}" --symptom "{gene.trigger}" --root-cause "Known pattern" --fix "{gene.strategy}"
+python -m evlop log --title "{one_line_title}" --task "Applied {skill_name}" --symptom "{one_line_trigger}" --root-cause "Known pattern" --fix "{gene.strategy}"
 ```
 """
     skill_file.write_text(content, encoding="utf-8")

@@ -1,7 +1,7 @@
 {
-  "command": "python -m unittest discover -s tests -p test_core.py -v",
+  "command": "python -m unittest discover -s tests -v",
   "exit_code": 0,
   "passed": true,
-  "timestamp": "2026-11-17T23:09:30.123282+00:00",
-  "output_snippet": "test_duplicate_gene_merge (test_core.TestEvlopCore.test_duplicate_gene_merge) ... ok\ntest_fitness_formula_and_unverified_gate (test_core.TestEvlopCore.test_fitness_formula_and_unverified_gate) ... ok\ntest_future_timestamp_clamped_and_decay_works (test_core.TestEvlopCore.test_future_timestamp_clamped_and_decay_works) ... ok\ntest_store_roundtrip_and_recall (test_core.TestEvlopCore.test_store_roundtrip_and_recall) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.084s\n\nOK"
+  "timestamp": "2026-11-17T23:25:49.914507+00:00",
+  "output_snippet": "est_verify_pass_fail_timeout_and_gbk_stdout_safety) ... ok\ntest_duplicate_gene_merge_english_and_cjk (test_core.TestEvlopCore.test_duplicate_gene_merge_english_and_cjk) ... ok\ntest_fitness_formula_and_unverified_gate (test_core.TestEvlopCore.test_fitness_formula_and_unverified_gate) ... ok\ntest_future_and_malformed_timestamps_clamped_and_decay_works (test_core.TestEvlopCore.test_future_and_malformed_timestamps_clamped_and_decay_works) ... ok\ntest_store_roundtrip_and_cjk_recall (test_core.TestEvlopCore.test_store_roundtrip_and_cjk_recall) ... ok\ntest_required_docs_and_citations_exist (test_docs_completeness.TestDocsCompleteness.test_required_docs_and_citations_exist) ... ok\ntest_agents_and_claude_md_contain_evlop_markers (test_protocols.TestProtocolsAndTemplates.test_agents_and_claude_md_contain_evlop_markers) ... ok\ntest_claude_hooks_template_is_valid_json (test_protocols.TestProtocolsAndTemplates.test_claude_hooks_template_is_valid_json) ... ok\ntest_skill_md_has_frontmatter_and_five_stages (test_protocols.TestProtocolsAndTemplates.test_skill_md_has_frontmatter_and_five_stages) ... ok\n\n----------------------------------------------------------------------\nRan 13 tests in 4.739s\n\nOK"
 }

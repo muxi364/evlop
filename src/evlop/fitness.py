@@ -8,11 +8,11 @@ import re
 
 from evlop.models import EvlopConfig, Gene
 
-_TOKEN_RE = re.compile(r"[a-z0-9_\-\u4e00-\u9fff]+")
+_TOKEN_RE = re.compile(r"[a-z0-9_\-]+|[\u4e00-\u9fff]")
 
 
 def tokenize(text: str) -> set[str]:
-    """Extract normalized alphanumeric and CJK tokens from text."""
+    """Extract normalized alphanumeric words and individual CJK character tokens."""
     return set(_TOKEN_RE.findall(text.lower()))
 
 
@@ -34,7 +34,8 @@ def _days_since(iso_ts: str, now: datetime) -> float:
     if not iso_ts:
         return 0.0
     try:
-        parsed = datetime.fromisoformat(iso_ts)
+        normalized = iso_ts[:-1] + "+00:00" if iso_ts.endswith("Z") else iso_ts
+        parsed = datetime.fromisoformat(normalized)
         if parsed.tzinfo is None:
             parsed = parsed.replace(tzinfo=timezone.utc)
         delta_days = (now - parsed).total_seconds() / 86400.0
@@ -76,7 +77,11 @@ def _merge_two_genes(primary: Gene, duplicate: Gene) -> Gene:
         if len(duplicate.anti_pattern) > len(primary.anti_pattern)
         else primary.anti_pattern
     )
-    created_at = min(primary.created_at, duplicate.created_at) if (primary.created_at and duplicate.created_at) else (primary.created_at or duplicate.created_at)
+    created_at = (
+        min(primary.created_at, duplicate.created_at)
+        if (primary.created_at and duplicate.created_at)
+        else (primary.created_at or duplicate.created_at)
+    )
     last_used_at = max(primary.last_used_at, duplicate.last_used_at)
 
     return Gene(

@@ -15,6 +15,17 @@ from evlop.store import EvlopStore
 from evlop.verifier import run_verification
 
 
+def _safe_print(text: str, file=None) -> None:
+    """Print text safely even if the target console stream uses strict legacy encoding (e.g. Windows gbk)."""
+    stream = file if file is not None else sys.stdout
+    try:
+        print(text, file=stream)
+    except UnicodeEncodeError:
+        enc = getattr(stream, "encoding", None) or "utf-8"
+        safe_text = text.encode(enc, errors="replace").decode(enc, errors="replace")
+        print(safe_text, file=stream)
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="evlop",
@@ -62,7 +73,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     p_skill = sub.add_parser(
         "export-skill",
-        help="[Stage P] Export a gene into a standalone SKILL.md directory",
+        help="[Stage P] Export a verified gene into a standalone SKILL.md directory",
     )
     p_skill.add_argument("--gene-id", required=True, help="ID of the gene to export")
     p_skill.add_argument("--out-dir", default="skills", help="Output skills directory")
@@ -82,7 +93,7 @@ def main(argv: list[str] | None = None, root_dir: Path | None = None) -> int:
         target = (workspace / args.target_dir).resolve() if not root_dir else workspace
         store = EvlopStore(target)
         evlop_path = store.init_store()
-        print(f"[EVLOP] Initialized self-evolution store at {evlop_path}")
+        _safe_print(f"[EVLOP] Initialized self-evolution store at {evlop_path}")
         return 0
 
     store = EvlopStore(workspace)
@@ -92,11 +103,11 @@ def main(argv: list[str] | None = None, root_dir: Path | None = None) -> int:
     if args.subcommand == "recall":
         matches = store.recall_genes(args.query, top_k=args.top)
         if not matches:
-            print(f"[EVLOP Recall] No matching genes found for '{args.query}'.")
+            _safe_print(f"[EVLOP Recall] No matching genes found for '{args.query}'.")
             return 0
-        print(f"[EVLOP Recall] Top {len(matches)} matching gene(s):")
+        _safe_print(f"[EVLOP Recall] Top {len(matches)} matching gene(s):")
         for g in matches:
-            print(
+            _safe_print(
                 f"  - [{g.status.upper()}] {g.id} (fitness={g.fitness:.2f}): {g.title}\n"
                 f"    Trigger : {g.trigger}\n"
                 f"    Strategy: {g.strategy}"
@@ -107,9 +118,9 @@ def main(argv: list[str] | None = None, root_dir: Path | None = None) -> int:
         record = run_verification(args.command, cwd=workspace, timeout_sec=args.timeout)
         store.save_verify(record)
         status_str = "PASSED" if record.passed else f"FAILED (exit={record.exit_code})"
-        print(f"[EVLOP Verify] {status_str} -> {record.command}")
+        _safe_print(f"[EVLOP Verify] {status_str} -> {record.command}")
         if record.output_snippet:
-            print(record.output_snippet)
+            _safe_print(record.output_snippet)
         return 0 if record.passed else (record.exit_code or 1)
 
     if args.subcommand == "log":
@@ -143,7 +154,7 @@ def main(argv: list[str] | None = None, root_dir: Path | None = None) -> int:
             trigger=args.trigger.strip() or args.symptom.strip(),
             strategy=args.strategy.strip() or args.fix.strip(),
             anti_pattern=args.anti_pattern.strip(),
-            success_count=0 if args.failed else 1,
+            success_count=1 if is_verified else 0,
             failure_count=1 if args.failed else 0,
             verified_gate=is_verified,
             created_at=now_iso,
@@ -152,7 +163,7 @@ def main(argv: list[str] | None = None, root_dir: Path | None = None) -> int:
         genes.append(new_gene)
         governed = govern_genes(genes, cfg)
         store.save_genes(governed)
-        print(f"[EVLOP Log] Recorded episode {episode.episode_id} -> gene {gene_id} (verified={is_verified})")
+        _safe_print(f"[EVLOP Log] Recorded episode {episode.episode_id} -> gene {gene_id} (verified={is_verified})")
         return 0
 
     if args.subcommand == "evolve":
@@ -167,7 +178,7 @@ def main(argv: list[str] | None = None, root_dir: Path | None = None) -> int:
 
         promoted_cnt = sum(1 for g in governed if g.status == "promoted")
         archived_cnt = sum(1 for g in governed if g.status == "archived")
-        print(
+        _safe_print(
             f"[EVLOP Evolve] Governed {len(governed)} genes "
             f"(promoted={promoted_cnt}, archived={archived_cnt}) -> updated {', '.join(targets)}"
         )
@@ -176,11 +187,18 @@ def main(argv: list[str] | None = None, root_dir: Path | None = None) -> int:
     if args.subcommand == "export-skill":
         genes = {g.id: g for g in store.load_genes()}
         if args.gene_id not in genes:
-            print(f"[EVLOP Error] Gene '{args.gene_id}' not found.", file=sys.stderr)
+            _safe_print(f"[EVLOP Error] Gene '{args.gene_id}' not found.", file=sys.stderr)
+            return 1
+        target_gene = genes[args.gene_id]
+        if not target_gene.verified_gate or target_gene.status == "archived":
+            _safe_print(
+                f"[EVLOP Error] Refusing to export unverified or archived gene '{args.gene_id}'.",
+                file=sys.stderr,
+            )
             return 1
         out_root = workspace / args.out_dir
-        skill_path = export_gene_to_skill(genes[args.gene_id], out_root)
-        print(f"[EVLOP Export-Skill] Created {skill_path}")
+        skill_path = export_gene_to_skill(target_gene, out_root)
+        _safe_print(f"[EVLOP Export-Skill] Created {skill_path}")
         return 0
 
     if args.subcommand == "status":
@@ -197,9 +215,9 @@ def main(argv: list[str] | None = None, root_dir: Path | None = None) -> int:
             "top_genes": [g.to_dict() for g in genes[:5]],
         }
         if args.json:
-            print(json.dumps(summary, indent=2, ensure_ascii=False))
+            _safe_print(json.dumps(summary, indent=2, ensure_ascii=False))
         else:
-            print(
+            _safe_print(
                 f"[EVLOP Status] Episodes: {summary['total_episodes']} | "
                 f"Genes: {summary['total_genes']} "
                 f"(Promoted: {summary['promoted_genes']}, "
