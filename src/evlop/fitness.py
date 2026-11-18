@@ -181,14 +181,23 @@ def govern_genes(
             matched_idx = id_to_idx[incoming.id]
         elif in_tokens:
             len_in = len(in_tokens)
-            overlap_counts: dict[int, int] = {}
-            for tok in in_tokens:
+            min_overlap = max(1, math.ceil(similarity_threshold * len_in))
+            max_prefix = len_in - min_overlap + 1
+            # PPJoin Prefix Filtering: sort tokens by posting list length (rarest first)
+            sorted_toks = sorted(in_tokens, key=lambda t: len(inverted_idx.get(t, ())))
+            candidate_indices: set[int] = set()
+            for tok in sorted_toks[:max_prefix]:
                 for cand_idx in inverted_idx.get(tok, ()):
-                    overlap_counts[cand_idx] = overlap_counts.get(cand_idx, 0) + 1
+                    candidate_indices.add(cand_idx)
 
-            for cand_idx in sorted(overlap_counts.keys()):
-                overlap = overlap_counts[cand_idx]
-                len_ex = len(merged_tokens[cand_idx])
+            min_len_ex = math.ceil(similarity_threshold * len_in)
+            max_len_ex = int(len_in / similarity_threshold) + 1
+            for cand_idx in sorted(candidate_indices):
+                cand_toks = merged_tokens[cand_idx]
+                len_ex = len(cand_toks)
+                if len_ex < min_len_ex or len_ex > max_len_ex:
+                    continue
+                overlap = len(in_tokens & cand_toks)
                 union_len = len_in + len_ex - overlap
                 if union_len > 0 and (overlap / union_len) >= similarity_threshold:
                     if _same_lineage_family(incoming, merged[cand_idx], parent_map):

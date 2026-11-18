@@ -28,7 +28,7 @@ class _CompiledSearchIndex:
     concat_lower: list[str]
 
 
-_SEARCH_INDEX_CACHE: dict[Path, tuple[int, int, _CompiledSearchIndex]] = {}
+_SEARCH_INDEX_CACHE: dict[Path, tuple[int, int, float, _CompiledSearchIndex]] = {}
 
 
 def _build_compiled_index(genes: list[Gene]) -> _CompiledSearchIndex:
@@ -242,23 +242,28 @@ class EvlopStore:
             _SEARCH_INDEX_CACHE[self.genes_file] = (
                 st.st_mtime_ns,
                 st.st_size,
+                time.monotonic(),
                 _build_compiled_index(genes),
             )
         except OSError:
             pass
 
     def _get_search_index(self) -> _CompiledSearchIndex:
-        if not self.genes_file.exists():
-            return _CompiledSearchIndex([], [], {}, [])
+        now_mono = time.monotonic()
+        cached = _SEARCH_INDEX_CACHE.get(self.genes_file)
+        if cached and (now_mono - cached[2]) < 0.05:
+            return cached[3]
         try:
             st = self.genes_file.stat()
-            cached = _SEARCH_INDEX_CACHE.get(self.genes_file)
             if cached and cached[0] == st.st_mtime_ns and cached[1] == st.st_size:
-                return cached[2]
+                _SEARCH_INDEX_CACHE[self.genes_file] = (cached[0], cached[1], now_mono, cached[3])
+                return cached[3]
             genes = self.load_genes()
             compiled = _build_compiled_index(genes)
-            _SEARCH_INDEX_CACHE[self.genes_file] = (st.st_mtime_ns, st.st_size, compiled)
+            _SEARCH_INDEX_CACHE[self.genes_file] = (st.st_mtime_ns, st.st_size, now_mono, compiled)
             return compiled
+        except FileNotFoundError:
+            return _CompiledSearchIndex([], [], {}, [])
         except OSError:
             return _build_compiled_index(self.load_genes())
 
