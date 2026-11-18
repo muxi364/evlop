@@ -9,7 +9,28 @@ You have access to the **EVLOP** (`Execute & Explore -> Verify & Validate -> Lea
 
 ---
 
-## The 5-Stage EVLOP Protocol
+## ⚡ Zero-Friction 2-Step Autopilot (Recommended for All Agents & Subagents)
+
+Instead of running 6+ separate commands, any Agent can achieve world-class, Pareto-optimal results in **2 commands**:
+
+1. **Step 1 — Before Coding (`preflight`):**
+   Deconstructs the task into **Feynman First-Principles Invariants + Minimal Counter-Examples** AND recalls the top matching historical genes (`<50us` BM25 + CJK bigram index):
+   ```bash
+   python -m evlop preflight "<your task description>"
+   # Or via MCP tool: evlop_preflight(task="<your task description>")
+   # Or via Python SDK: engine.preflight("<your task description>")
+   ```
+2. **Step 2 — After Coding (`ship`):**
+   Runs your test command + **100-Point AST Code Quality & $O(N^2)$ Complexity Gate**, and on pass **automatically distills, logs, governs, and promotes** the verified gene into `AGENTS.md` and `CLAUDE.md`:
+   ```bash
+   python -m evlop ship "<test command>" --code <path_to_file_or_dir>
+   # Or via MCP tool: evlop_ship(command="<test command>", code="<path>")
+   # Or via Python SDK: engine.ship("<test command>", code_path="<path>")
+   ```
+
+---
+
+## The Granular 5-Stage EVLOP Protocol (Advanced Control)
 
 ### Stage 1: [E] Execute & Explore (Before Acting)
 

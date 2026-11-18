@@ -17,6 +17,7 @@ from evlop.fitness import govern_genes
 from evlop.models import Episode, Gene, slugify_gene_id, utc_now_iso
 from evlop.quality_gate import audit_python_path
 from evlop.rsi_pareto import run_rsi_scaffold_evolution
+from evlop.sdk import EvlopEngine
 from evlop.store import EvlopStore
 from evlop.verifier import extract_failure_diagnosis, run_verification
 
@@ -203,6 +204,24 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     p_feynman.add_argument("--json", action="store_true", help="Output blueprint as JSON")
 
+    p_preflight = sub.add_parser(
+        "preflight",
+        help="[Autopilot Step 1] Run Feynman First-Principles deconstruction + BM25 Gene Recall before coding",
+    )
+    p_preflight.add_argument("task", help="Task description to deconstruct and recall genes for")
+    p_preflight.add_argument("--top", type=int, default=5, help="Max recalled genes to include")
+    p_preflight.add_argument("--json", action="store_true", help="Output preflight payload as JSON")
+
+    p_ship = sub.add_parser(
+        "ship",
+        help="[Autopilot Step 2] Verify unit tests + AST Quality Gate, and auto-promote verified gene into AGENTS.md",
+    )
+    p_ship.add_argument("command", help="Verification shell command to run (e.g. pytest, unittest)")
+    p_ship.add_argument("--code", default=".", help="Python file or directory to audit with AST Quality Gate")
+    p_ship.add_argument("--min-quality-score", type=float, default=95.0, help="Minimum AST quality score (default 95.0)")
+    p_ship.add_argument("--agent-id", default="", help="Swarm or external agent identifier")
+    p_ship.add_argument("--timeout", type=int, default=120, help="Command timeout in seconds")
+
     sub.add_parser("mcp", help="Run zero-dependency MCP JSON-RPC 2.0 server over stdio")
 
     return parser
@@ -240,6 +259,49 @@ def main(argv: list[str] | None = None, root_dir: Path | None = None) -> int:
         from evlop.mcp_server import run_stdio_server
 
         return run_stdio_server(workspace)
+
+    if args.subcommand == "preflight":
+        engine = EvlopEngine(workspace)
+        payload = engine.preflight(args.task, top_k=args.top)
+        if args.json:
+            _safe_print(json.dumps(payload, indent=2, ensure_ascii=False))
+            return 0
+        bp = generate_feynman_blueprint(args.task)
+        _safe_print(bp.to_markdown())
+        recalled = payload["recalled_genes"]
+        _safe_print(f"\n### Recalled Project Genes ({len(recalled)} matched)")
+        for g in recalled:
+            _safe_print(f"- **[{g['status'].upper()}] {g['title']} (`{g['id']}`)**: {g['strategy']}")
+        return 0
+
+    if args.subcommand == "ship":
+        engine = EvlopEngine(workspace)
+        eff_agent = args.agent_id.strip() or os.environ.get("EVLOP_AGENT_ID", "autopilot-agent")
+        res = engine.ship(
+            command=args.command,
+            code_path=args.code,
+            min_quality_score=args.min_quality_score,
+            agent_id=eff_agent,
+            timeout_sec=args.timeout,
+        )
+        if not res["passed"]:
+            _safe_print(
+                f"[EVLOP Ship REJECTED] Exit={res['exit_code']} | AST Score={res['ast_score']}/100.0 | "
+                f"Duration={res['duration_ms']:.1f}ms"
+            )
+            if res["output_snippet"]:
+                _safe_print(res["output_snippet"])
+            if res["hints"]:
+                _safe_print("\n[EVLOP Auto-Recall Hint] Matching recovery genes:")
+                for h in res["hints"]:
+                    _safe_print(f"  * {h['title']} ({h['id']}): {h['strategy']}")
+            return int(res["exit_code"]) or 1
+
+        _safe_print(
+            f"[EVLOP Ship PASSED & EVOLVED] Duration={res['duration_ms']:.1f}ms | "
+            f"AST Score={res['ast_score']}/100.0 | Promoted Gene: '{res['promoted_gene_id']}' -> AGENTS.md & CLAUDE.md"
+        )
+        return 0
 
     if args.subcommand == "feynman":
         bp = generate_feynman_blueprint(args.task)

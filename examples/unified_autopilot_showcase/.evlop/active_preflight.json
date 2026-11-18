@@ -1,0 +1,32 @@
+{
+  "task": "Implement a stateful TCP byte-stream frame codec with 4-byte big-endian length prefix and arbitrary chunk reassembly",
+  "timestamp": "2026-11-18T05:52:19.845330+00:00",
+  "blueprint": {
+    "task_description": "Implement a stateful TCP byte-stream frame codec with 4-byte big-endian length prefix and arbitrary chunk reassembly",
+    "first_principles_invariant": "Byte-Stream Continuity Invariant: Transport chunk boundaries are completely arbitrary and independent of logical message boundaries. A decoder MUST append incoming bytes to a persistent unread buffer and loop to extract 0, 1, or N complete frames only when their full payload is present, leaving partial trailing bytes in the buffer for future calls.",
+    "naive_intuition_traps": [
+      "Assuming 1 `feed_chunk()` call equals 1 logical frame (failing when a frame is split 1 byte at a time or when 3 frames arrive in 1 chunk).",
+      "Consuming or discarding buffer bytes before verifying the full frame length is available in the buffer.",
+      "Replacing escaped sequences in-place with naive `.replace()` where double-escapes (`\\\\`) get corrupted."
+    ],
+    "minimal_counter_examples": [
+      "Feed a 20-byte encoded frame 1 byte at a time (`for b in frame: feed(bytes([b]))`) -> first 19 calls return `[]`, 20th call returns `[payload]`.",
+      "Feed 3 concatenated frames in a single `feed_chunk(f1 + f2 + f3)` call -> must return all 3 decoded payloads in one list.",
+      "Payload containing literal delimiter/escape bytes -> must round-trip identically (`decode(encode(raw)) == raw`)."
+    ],
+    "boundary_checklist": [
+      "Empty / zero-element input handled without crash",
+      "Single-element and tie-breaking / wrap-around boundary tested",
+      "All 3 Feynman minimal counter-examples encoded as unit tests",
+      "AST Quality Gate (`evlop audit --min-score 100`) passes with 0 findings"
+    ],
+    "universal_mental_model": "Stateful Accumulator Buffer with Atomic Frame-Boundary Commit",
+    "transferable_domains": [
+      "network-protocols",
+      "log-collectors",
+      "rpc-framing",
+      "binary-parsers"
+    ]
+  },
+  "recalled_genes": []
+}

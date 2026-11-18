@@ -15,17 +15,20 @@ from evlop.store import EvlopStore
 _AGENT_PROTOCOL_HEADER = """# {title} — EVLOP Self-Evolving Agent Protocol
 
 This project is equipped with the **EVLOP Self-Evolving Agent Engine** (`.evlop/evlop_runner.py`).
-Follow the 5-stage loop on every coding or debugging task:
 
-1. **[E] Explore & Recall:** Before acting or when hitting an error, run:
-   `python .evlop/evlop_runner.py recall "<error or keyword>"`
-2. **[V] Verify Deterministically:** Run your test/build command through the gate:
-   `python .evlop/evlop_runner.py verify "<test-command>"`
-   *(If verification fails, EVLOP automatically diagnoses the stack trace and recalls matching fixes!)*
-3. **[L] Learn & Log:** After fixing a failure and passing `verify`, log the lesson automatically:
-   `python .evlop/evlop_runner.py log --from-last-failure --title "<Rule Title>" --task "<Task>" --root-cause "<Why>" --fix "<How fixed>"`
-4. **[O & P] Evolve & Promote:** Compile verified high-fitness genes into project instructions:
-   `python .evlop/evlop_runner.py evolve --target AGENTS.md,CLAUDE.md,.cursorrules`
+## ⚡ Zero-Friction 2-Step Autopilot (Recommended for All Agents)
+1. **Before coding (`preflight`):** Deconstruct the task into Feynman First-Principles invariants + recall top matching genes:
+   `python .evlop/evlop_runner.py preflight "<your task description>"`
+2. **After coding (`ship`):** Run unit tests + 100-point AST Quality Gate + auto-log/evolve/promote gene into `AGENTS.md`:
+   `python .evlop/evlop_runner.py ship "<test-command>" --code <file_or_dir>`
+
+---
+
+## Granular 5-Stage Commands (Advanced Control)
+1. **[E] Explore & Recall:** `python .evlop/evlop_runner.py recall "<error or keyword>"`
+2. **[V] Verify & Audit:** `python .evlop/evlop_runner.py verify "<test-command>" --quality-gate . --auto-evolve`
+3. **[L] Learn & Log:** `python .evlop/evlop_runner.py log --from-last-failure --title "<Rule Title>" --task "<Task>" --root-cause "<Why>" --fix "<How fixed>"`
+4. **[O & P] Evolve & Promote:** `python .evlop/evlop_runner.py evolve --target AGENTS.md,CLAUDE.md,.cursorrules`
 """
 
 

@@ -28,6 +28,34 @@ MCP_TOOLS: list[dict[str, Any]] = [
         },
     },
     {
+        "name": "evlop_preflight",
+        "description": "[Autopilot Step 1] Run Feynman First-Principles deconstruction + BM25 Gene Recall before coding.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "workspace_dir": _WS_PROP,
+                "task": {"type": "string", "description": "Task description to deconstruct and recall genes for"},
+                "top": {"type": "integer", "default": 5},
+            },
+            "required": ["task"],
+        },
+    },
+    {
+        "name": "evlop_ship",
+        "description": "[Autopilot Step 2] Run unit tests + 100-pt AST Quality Gate, and auto-promote verified gene into AGENTS.md & CLAUDE.md.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "workspace_dir": _WS_PROP,
+                "command": {"type": "string", "description": "Verification shell command to run"},
+                "code": {"type": "string", "default": ".", "description": "Python file or directory for AST Quality Gate"},
+                "min_quality_score": {"type": "number", "default": 95.0},
+                "agent_id": {"type": "string", "default": "mcp-autopilot"},
+            },
+            "required": ["command"],
+        },
+    },
+    {
         "name": "evlop_recall",
         "description": "[Stage E] Recall relevant evolved engineering genes before coding or debugging.",
         "inputSchema": {
@@ -194,6 +222,16 @@ def handle_mcp_request(req: dict[str, Any], workspace: Path) -> dict[str, Any] |
             argv = ["init", "--bootstrap"]
             if args.get("with_hooks", True):
                 argv.append("--with-hooks")
+        elif name == "evlop_preflight":
+            argv = ["preflight", str(args["task"]), "--top", str(args.get("top", 5))]
+        elif name == "evlop_ship":
+            argv = [
+                "ship",
+                str(args["command"]),
+                "--code", str(args.get("code", ".")),
+                "--min-quality-score", str(args.get("min_quality_score", 95.0)),
+                "--agent-id", str(args.get("agent_id", "mcp-autopilot")),
+            ]
         elif name == "evlop_recall":
             argv = ["recall", str(args.get("query", "*")), "--top", str(args.get("top", 5))]
         elif name == "evlop_verify":

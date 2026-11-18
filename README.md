@@ -70,7 +70,22 @@ pip install -e .
 PYTHONPATH=src python -m evlop status
 ```
 
-### 2. 完整五步自进化命令流演示
+### 2. 极简两步全自动闭环（Unified 2-Step Autopilot — 任何外部 Agent 零认知负担复用）
+
+为了让**任何外部 AI Agent（包括轻量级弱模型 `flash_lite`、多智能体并发集群或第三方 IDE）**无需记忆十余个子命令即可直接产出世界级结果，EVLOP v7.0 将**费曼第一性原理拆解、微秒级 BM25 基因召回、单元测试验证、100 分制 AST 复杂度审计、经验自动结晶与 `AGENTS.md` 自动晋升**深度整合为**仅需 2 步的全自动闭环（`preflight` + `ship`）**：
+
+```bash
+# 第一步（写代码前）：运行 preflight —— 自动生成【费曼四步第一性原理蓝图 + 最小反例清单】并召回 Top 历史基因
+python -m evlop preflight "Implement consistent hash ring with virtual nodes and replica placement"
+
+# 第二步（写完代码后）：运行 ship —— 自动执行【单元测试 + 100分制 AST 静态质量与 O(N^2) 复杂度门禁】
+# 若测试失败或 AST 评分不达标则自动拦截并召回修复基因；若双双通过则自动提炼基因并晋升写入 AGENTS.md & CLAUDE.md！
+python -m evlop ship "python -m unittest discover -s tests -v" --code src/
+```
+
+---
+
+### 3. 完整五步细粒度自进化命令流（Granular Advanced Control）
 
 ```bash
 # Step 0: 在任意项目根目录初始化 .evlop/ 进化记忆库
