@@ -87,6 +87,20 @@ class DagRunRecord:
         return asdict(self)
 
 
+def _collect_next_ready(
+    ready: list[str],
+    dependents: dict[str, list[str]],
+    in_degree: dict[str, int],
+) -> list[str]:
+    next_ready: list[str] = []
+    for nid in ready:
+        for child_id in dependents[nid]:
+            in_degree[child_id] -= 1
+            if in_degree[child_id] == 0:
+                next_ready.append(child_id)
+    return sorted(next_ready)
+
+
 def compute_topological_waves(nodes: list[DagNodeSpec]) -> list[list[DagNodeSpec]]:
     """
     Partition DAG nodes into topological execution waves (Kahn's algorithm).
@@ -115,13 +129,7 @@ def compute_topological_waves(nodes: list[DagNodeSpec]) -> list[list[DagNodeSpec
         current_wave = [by_id[nid] for nid in ready]
         waves.append(current_wave)
         visited_count += len(current_wave)
-        next_ready: list[str] = []
-        for nid in ready:
-            for child_id in dependents[nid]:
-                in_degree[child_id] -= 1
-                if in_degree[child_id] == 0:
-                    next_ready.append(child_id)
-        ready = sorted(next_ready)
+        ready = _collect_next_ready(ready, dependents, in_degree)
 
     if visited_count != len(nodes):
         raise DagCycleError("Cycle detected in DAG specification.")

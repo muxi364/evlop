@@ -8,6 +8,8 @@ import shutil
 
 from evlop.compiler import inject_markdown_file
 from evlop.models import Gene
+from evlop.seed_genome import get_default_seed_genes
+from evlop.store import EvlopStore
 
 
 _AGENT_PROTOCOL_HEADER = """# {title} — EVLOP Self-Evolving Agent Protocol
@@ -38,6 +40,9 @@ def bootstrap_workspace(
     and initialize `AGENTS.md`, `CLAUDE.md`, `.cursorrules`, `.mcp.json`, and optional `.claude/settings.json`.
     """
     target_dir = Path(target_dir).resolve()
+    if not genes:
+        genes = get_default_seed_genes()
+        EvlopStore(target_dir).save_genes(genes)
     evlop_dir = target_dir / ".evlop"
     vendor_pkg_dir = evlop_dir / "vendor" / "evlop"
     vendor_pkg_dir.mkdir(parents=True, exist_ok=True)

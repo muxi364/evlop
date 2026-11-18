@@ -187,8 +187,7 @@ def govern_genes(
             sorted_toks = sorted(in_tokens, key=lambda t: len(inverted_idx.get(t, ())))
             candidate_indices: set[int] = set()
             for tok in sorted_toks[:max_prefix]:
-                for cand_idx in inverted_idx.get(tok, ()):
-                    candidate_indices.add(cand_idx)
+                candidate_indices.update(inverted_idx.get(tok, ()))
 
             min_len_ex = math.ceil(similarity_threshold * len_in)
             max_len_ex = int(len_in / similarity_threshold) + 1

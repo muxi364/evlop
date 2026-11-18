@@ -1,0 +1,8 @@
+{
+  "command": "python -m unittest discover -s . -p test_rate_limiter.py -v",
+  "exit_code": 0,
+  "passed": true,
+  "timestamp": "2026-11-18T01:30:48.942267+00:00",
+  "output_snippet": "[BENCHMARK] 50,000 allow_request() calls: 46.32 ms (1,079,438 ops/sec)\n\ntest_boundary_and_invalid_inputs (test_rate_limiter.TestTokenBucketRateLimiter.test_boundary_and_invalid_inputs)\nVerify strict boundary guards against zero, negative, NaN, Inf, and bool inputs. ... ok\ntest_burst_allowance_and_exhaustion (test_rate_limiter.TestTokenBucketRateLimiter.test_burst_allowance_and_exhaustion)\nVerify full burst capacity is allowed immediately and excess is rejected. ... ok\ntest_exact_lazy_refill_and_cap (test_rate_limiter.TestTokenBucketRateLimiter.test_exact_lazy_refill_and_cap)\nVerify lazy O(1) refill calculation and capacity clamping over time. ... ok\ntest_thread_safety_under_concurrent_burst (test_rate_limiter.TestTokenBucketRateLimiter.test_thread_safety_under_concurrent_burst)\nVerify exact token accounting under multi-threaded contention. ... ok\ntest_throughput_benchmark_50k_requests (test_rate_limiter.TestTokenBucketRateLimiter.test_throughput_benchmark_50k_requests)\nVerify 50,000 allow_request() calls complete in < 200ms (> 250,000 ops/sec). ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 0.054s\n\nOK",
+  "duration_ms": 828.49
+}

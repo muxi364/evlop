@@ -14,6 +14,7 @@ from evlop.compiler import export_gene_to_skill, inject_markdown_file, render_li
 from evlop.dag_rail import DagCycleError, execute_dag_rail
 from evlop.fitness import govern_genes
 from evlop.models import Episode, Gene, slugify_gene_id, utc_now_iso
+from evlop.quality_gate import audit_python_path
 from evlop.store import EvlopStore
 from evlop.verifier import extract_failure_diagnosis, run_verification
 
@@ -56,6 +57,25 @@ def _build_parser() -> argparse.ArgumentParser:
     p_verify = sub.add_parser("verify", help="[Stage V] Run deterministic verification command gate")
     p_verify.add_argument("command", help="Shell command to execute (e.g. pytest, npm test)")
     p_verify.add_argument("--timeout", type=int, default=120, help="Timeout in seconds")
+    p_verify.add_argument(
+        "--quality-gate",
+        default="",
+        help="Optional Python file or directory path to enforce AST code quality & complexity gate (>= min-quality-score)",
+    )
+    p_verify.add_argument(
+        "--min-quality-score",
+        type=float,
+        default=90.0,
+        help="Minimum AST quality score required when --quality-gate is enabled (default 90.0)",
+    )
+
+    p_audit = sub.add_parser(
+        "audit",
+        help="[Stage V+] Run deterministic AST code quality & O(N^2) complexity auditor on Python files",
+    )
+    p_audit.add_argument("path", default=".", nargs="?", help="Python file or directory to audit")
+    p_audit.add_argument("--min-score", type=float, default=90.0, help="Minimum passing score (0..100)")
+    p_audit.add_argument("--json", action="store_true", help="Output audit report as JSON")
 
     p_log = sub.add_parser("log", help="[Stage L] Record an episode and create/reinforce a gene")
     p_log.add_argument("--title", default="", help="Short imperative rule title")
@@ -256,8 +276,37 @@ def main(argv: list[str] | None = None, root_dir: Path | None = None) -> int:
             )
         return 0
 
+    if args.subcommand == "audit":
+        target_p = Path(args.path)
+        if not target_p.is_absolute():
+            target_p = (workspace / target_p).resolve()
+        q_report = audit_python_path(target_p, min_score=args.min_score)
+        if args.json:
+            _safe_print(json.dumps(q_report.to_dict(), indent=2, ensure_ascii=False))
+        else:
+            status_tag = "PASSED" if q_report.passed else "FAILED"
+            _safe_print(
+                f"[EVLOP AST Audit {status_tag}] Score: {q_report.score}/100.0 "
+                f"(Min: {q_report.min_score} | Scanned: {q_report.files_scanned} file(s) | Findings: {len(q_report.findings)})"
+            )
+            for f in q_report.findings:
+                _safe_print(f"  - [{f.severity.upper()}] {f.file}:{f.line} ({f.rule_id}, -{f.penalty}): {f.message}")
+        return 0 if q_report.passed else 1
+
     if args.subcommand == "verify":
         record = run_verification(args.command, cwd=workspace, timeout_sec=args.timeout)
+        if record.passed and args.quality_gate:
+            qg_path = Path(args.quality_gate)
+            if not qg_path.is_absolute():
+                qg_path = (workspace / qg_path).resolve()
+            q_rep = audit_python_path(qg_path, min_score=args.min_quality_score)
+            if not q_rep.passed:
+                record.passed = False
+                record.exit_code = 2
+                findings_txt = "; ".join(f"{f.file}:{f.line} {f.rule_id}" for f in q_rep.findings)
+                record.output_snippet = (
+                    f"{record.output_snippet}\n[EVLOP Quality Gate FAILED] AST Score {q_rep.score} < {q_rep.min_score}: {findings_txt}"
+                ).strip()
         with store.lock():
             store.save_verify(record)
             status_str = "PASSED" if record.passed else f"FAILED (exit={record.exit_code})"

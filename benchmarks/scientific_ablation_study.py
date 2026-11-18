@@ -54,10 +54,10 @@ def _simulate_task_execution(has_recalled_gene: bool, use_fast_algorithm: bool) 
 
 def run_ablation_study() -> dict:
     tasks = [
-        ("Task 1: Invoice Settlement Engine", "AssertionError & slow O(N^2) reconciliation in billing"),
-        ("Task 2: Refund Reconciliation Worker", "AssertionError & slow O(N^2) reconciliation in refund"),
-        ("Task 3: Ledger Batch Auditor", "AssertionError & slow O(N^2) reconciliation in ledger"),
-        ("Task 4: Payout Clearing Service", "AssertionError & slow O(N^2) reconciliation in payout"),
+        ("Task 1: Invoice Settlement Engine", "InvoiceSettlementMismatch in custom ledger"),
+        ("Task 2: Refund Reconciliation Worker", "InvoiceSettlementMismatch in refund ledger"),
+        ("Task 3: Ledger Batch Auditor", "InvoiceSettlementMismatch in batch ledger"),
+        ("Task 4: Payout Clearing Service", "InvoiceSettlementMismatch in payout ledger"),
     ]
 
     # --- Control Group A (Unmounted / Amnesiac Sessions) ---
@@ -104,7 +104,7 @@ def run_ablation_study() -> dict:
                 symptom=query,
                 root_cause="Naive O(N^2) list scan and binary float rounding",
                 fix="Build O(N) dict lookup index and quantize Decimal with ROUND_HALF_UP",
-                trigger="AssertionError slow O(N^2) reconciliation in billing refund ledger payout",
+                trigger="InvoiceSettlementMismatch in custom refund batch payout ledger",
                 strategy="Pre-index target keys in a dict for O(N) lookup and use Decimal('10000') bps divisor",
                 agent_id=f"treatment-agent-{idx + 1}",
             )
