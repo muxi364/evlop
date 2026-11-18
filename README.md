@@ -9,6 +9,7 @@
   <a href="./README_EN.md">English Documentation (README_EN.md)</a> ·
   <a href="./docs/why-claude-is-strong.md">为什么 Claude 这么强？</a> ·
   <a href="./docs/evlop-methodology.md">EVLOP 方法论规范</a> ·
+  <a href="./docs/cross-agent-verification-report.md">跨 Agent 真实盲测报告</a> ·
   <a href="./docs/papers-and-ecosystem.md">顶会论文与开源全景索引</a>
 </p>
 
@@ -110,11 +111,31 @@ python -m evlop mutate \
 python -m evlop lineage --mermaid --out docs/LINEAGE.md
 ```
 
-### 3. 让其他 Agent 立刻接入 EVLOP
+### 3. 让任何其他 Agent 一键零依赖接入 EVLOP（工程级全自动引导）
 
-- **Antigravity / Claude Code Skill 接入**：直接将本仓库根目录的 [`SKILL.md`](./SKILL.md) 放入你的技能目录，Agent 会自动按五步法调用 `evlop`。
-- **通用项目接入**：将 [`templates/AGENTS.template.md`](./templates/AGENTS.template.md) 或 [`templates/CLAUDE.template.md`](./templates/CLAUDE.template.md) 复制到你的目标仓库根目录。
-- **Claude Code 自动生命周期钩子**：将 [`templates/claude-settings-hooks.json`](./templates/claude-settings-hooks.json) 合并进项目的 `.claude/settings.json`，即可在每次会话结束（`Stop`）时自动触发 `evlop evolve`。
+- **方式 A：跨项目一键全量引导（推荐 — 零依赖免安装）**
+  在任意目标项目上运行一行命令：
+  ```bash
+  python -m evlop init --target-dir /path/to/your-project --bootstrap --with-hooks
+  ```
+  该命令会自动在目标项目中生成：
+  1. `.evlop/evlop_runner.py`（内嵌完整引擎副本，目标项目无需 `pip install` 或配置 `PYTHONPATH` 即可直接运行 `python .evlop/evlop_runner.py ...`）
+  2. `AGENTS.md`、`CLAUDE.md`、`.cursorrules`（预置五步协议与自动进化的 `<!-- EVLOP:START -->` 基因块）
+  3. `.claude/settings.json`（会话启动与结束自动触发 `evlop evolve` 的生命周期钩子）
+- **方式 B：原生 MCP Server 接入（JSON-RPC 2.0 over stdio）**
+  支持 Claude Desktop、Claude Code、Antigravity、Cursor 直接作为 MCP Server 挂载（提供 `evlop_recall`、`evlop_verify`、`evlop_log`、`evlop_evolve`、`evlop_status` 五大原生工具）：
+  ```json
+  {
+    "mcpServers": {
+      "evlop": {
+        "command": "python",
+        "args": ["-m", "evlop", "mcp"]
+      }
+    }
+  }
+  ```
+- **方式 C：报错即召回（Auto-Recall on Verify Failure）**
+  当 Agent 运行 `evlop verify` 测试失败时，引擎会自动解析报错栈提取异常类型（写入 `.evlop/last_failure.json`），并实时检索基因库在终端打印 `[EVLOP Auto-Recall Hint]`；修复后运行 `evlop log --from-last-failure` 即可自动关联报错上下文。实测双智能体盲测报告见 👉 **[docs/cross-agent-verification-report.md](./docs/cross-agent-verification-report.md)**。
 
 ---
 

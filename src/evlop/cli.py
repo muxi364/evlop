@@ -1,4 +1,4 @@
-"""CLI entrypoint for EVLOP v2.0: init, recall, verify, log, mutate, lineage, evolve, export-skill, status."""
+"""CLI entrypoint for EVLOP: init, recall, verify, log, mutate, lineage, evolve, export-skill, status, mcp."""
 
 from __future__ import annotations
 
@@ -9,11 +9,12 @@ import os
 from pathlib import Path
 import sys
 
+from evlop.bootstrap import bootstrap_workspace
 from evlop.compiler import export_gene_to_skill, inject_markdown_file, render_lineage_mermaid
 from evlop.fitness import govern_genes
 from evlop.models import Episode, Gene, slugify_gene_id, utc_now_iso
 from evlop.store import EvlopStore
-from evlop.verifier import run_verification
+from evlop.verifier import extract_failure_diagnosis, run_verification
 
 
 def _safe_print(text: str, file=None) -> None:
@@ -34,8 +35,18 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     sub = parser.add_subparsers(dest="subcommand", required=True)
 
-    p_init = sub.add_parser("init", help="Initialize .evlop/ workspace store")
+    p_init = sub.add_parser("init", help="Initialize .evlop/ workspace store and optional full agent bootstrap")
     p_init.add_argument("--target-dir", default=".", help="Workspace directory")
+    p_init.add_argument(
+        "--bootstrap",
+        action="store_true",
+        help="Vendor standalone .evlop/evlop_runner.py and create AGENTS.md, CLAUDE.md, and .cursorrules",
+    )
+    p_init.add_argument(
+        "--with-hooks",
+        action="store_true",
+        help="Also generate .claude/settings.json automatic SessionStart and Stop evolution hooks",
+    )
 
     p_recall = sub.add_parser("recall", help="[Stage E] Recall relevant evolved genes before acting")
     p_recall.add_argument("query", help="Search keywords, error message, or '*' for top genes")
@@ -48,7 +59,12 @@ def _build_parser() -> argparse.ArgumentParser:
     p_log = sub.add_parser("log", help="[Stage L] Record an episode and create/reinforce a gene")
     p_log.add_argument("--title", default="", help="Short imperative rule title")
     p_log.add_argument("--task", required=True, help="Summary of the task being solved")
-    p_log.add_argument("--symptom", required=True, help="Failure symptom or problem encountered")
+    p_log.add_argument("--symptom", default="", help="Failure symptom or problem encountered")
+    p_log.add_argument(
+        "--from-last-failure",
+        action="store_true",
+        help="Auto-populate symptom and trigger from .evlop/last_failure.json",
+    )
     p_log.add_argument("--root-cause", required=True, help="Diagnosed root cause")
     p_log.add_argument("--fix", required=True, help="Fix applied")
     p_log.add_argument(
@@ -106,6 +122,8 @@ def _build_parser() -> argparse.ArgumentParser:
     p_status = sub.add_parser("status", help="Inspect EVLOP genome health, swarm contributors, and lineage depth")
     p_status.add_argument("--json", action="store_true", help="Output status as JSON")
 
+    sub.add_parser("mcp", help="Run zero-dependency MCP JSON-RPC 2.0 server over stdio")
+
     return parser
 
 
@@ -118,12 +136,29 @@ def main(argv: list[str] | None = None, root_dir: Path | None = None) -> int:
         target = (workspace / args.target_dir).resolve() if not root_dir else workspace
         store = EvlopStore(target)
         evlop_path = store.init_store()
-        _safe_print(f"[EVLOP] Initialized self-evolution store at {evlop_path}")
+        cfg = store.load_config()
+        if args.bootstrap or args.with_hooks:
+            created = bootstrap_workspace(
+                target,
+                store.load_genes(),
+                max_genes=cfg.max_active_genes,
+                with_hooks=args.with_hooks,
+            )
+            _safe_print(
+                f"[EVLOP Bootstrap] Initialized {evlop_path} and bootstrapped {len(created)} agent protocol files."
+            )
+        else:
+            _safe_print(f"[EVLOP] Initialized self-evolution store at {evlop_path}")
         return 0
 
     store = EvlopStore(workspace)
     store.init_store()
     cfg = store.load_config()
+
+    if args.subcommand == "mcp":
+        from evlop.mcp_server import run_stdio_server
+
+        return run_stdio_server(workspace)
 
     if args.subcommand == "recall":
         matches = store.recall_genes(args.query, top_k=args.top)
@@ -141,97 +176,123 @@ def main(argv: list[str] | None = None, root_dir: Path | None = None) -> int:
 
     if args.subcommand == "verify":
         record = run_verification(args.command, cwd=workspace, timeout_sec=args.timeout)
-        store.save_verify(record)
-        status_str = "PASSED" if record.passed else f"FAILED (exit={record.exit_code})"
-        _safe_print(f"[EVLOP Verify] {status_str} ({record.duration_ms:.1f}ms) -> {record.command}")
-        if record.output_snippet:
-            _safe_print(record.output_snippet)
+        with store.lock():
+            store.save_verify(record)
+            status_str = "PASSED" if record.passed else f"FAILED (exit={record.exit_code})"
+            _safe_print(f"[EVLOP Verify] {status_str} ({record.duration_ms:.1f}ms) -> {record.command}")
+            if record.output_snippet:
+                _safe_print(record.output_snippet)
+            if not record.passed:
+                diag = extract_failure_diagnosis(record)
+                store.save_failure(diag)
+                hints = store.recall_genes(f"{diag.error_type} {diag.symptom_summary}", top_k=3)
+                if hints:
+                    _safe_print(f"\n[EVLOP Auto-Recall Hint] Found {len(hints)} matching gene(s) for {diag.error_type}:")
+                    for h in hints:
+                        _safe_print(f"  * {h.title} ({h.id}): {h.strategy}")
         return 0 if record.passed else (record.exit_code or 1)
 
     if args.subcommand == "log":
-        last_v = store.load_last_verify()
-        is_verified = bool(last_v and last_v.passed and not args.failed)
-        verify_cmd = last_v.command if last_v else ""
-        agent_id = args.agent_id.strip() or os.environ.get("EVLOP_AGENT_ID", "default-agent")
+        with store.lock():
+            last_v = store.load_last_verify()
+            is_verified = bool(
+                store.is_verify_fresh(last_v, ttl_minutes=cfg.verify_ttl_minutes)
+                and not args.failed
+            )
+            verify_cmd = last_v.command if last_v else ""
+            agent_id = args.agent_id.strip() or os.environ.get("EVLOP_AGENT_ID", "default-agent")
 
-        title = args.title.strip() or args.fix.strip()[:60]
-        gene_id = slugify_gene_id(title)
-        now_iso = utc_now_iso()
-        ep_hash = hashlib.sha1(f"{now_iso}:{args.task}:{gene_id}:{agent_id}".encode("utf-8")).hexdigest()[:10]
+            symptom = args.symptom.strip()
+            trigger = args.trigger.strip()
+            if args.from_last_failure:
+                last_fail = store.load_last_failure()
+                if last_fail:
+                    if not symptom:
+                        symptom = f"{last_fail.error_type}: {last_fail.symptom_summary}"
+                    if not trigger:
+                        trigger = f"{last_fail.error_type} {last_fail.symptom_summary}"
+            if not symptom:
+                symptom = args.task.strip()
 
-        episode = Episode(
-            episode_id=f"ep-{ep_hash}",
-            timestamp=now_iso,
-            task_summary=args.task,
-            failure_symptom=args.symptom,
-            root_cause=args.root_cause,
-            fix_applied=args.fix,
-            verified=is_verified,
-            verify_cmd=verify_cmd,
-            gene_id=gene_id,
-            agent_id=agent_id,
-        )
-        store.append_episode(episode)
+            title = args.title.strip() or args.fix.strip()[:60]
+            gene_id = slugify_gene_id(title)
+            now_iso = utc_now_iso()
+            ep_hash = hashlib.sha1(f"{now_iso}:{args.task}:{gene_id}:{agent_id}".encode("utf-8")).hexdigest()[:10]
 
-        genes = store.load_genes()
-        new_gene = Gene(
-            id=gene_id,
-            title=title,
-            category=args.category,
-            trigger=args.trigger.strip() or args.symptom.strip(),
-            strategy=args.strategy.strip() or args.fix.strip(),
-            anti_pattern=args.anti_pattern.strip(),
-            success_count=1 if is_verified else 0,
-            failure_count=1 if args.failed else 0,
-            verified_gate=is_verified,
-            created_at=now_iso,
-            last_used_at=now_iso,
-            contributors=[agent_id],
-        )
-        genes.append(new_gene)
-        governed = govern_genes(genes, cfg)
-        store.save_genes(governed)
+            episode = Episode(
+                episode_id=f"ep-{ep_hash}",
+                timestamp=now_iso,
+                task_summary=args.task,
+                failure_symptom=symptom,
+                root_cause=args.root_cause,
+                fix_applied=args.fix,
+                verified=is_verified,
+                verify_cmd=verify_cmd,
+                gene_id=gene_id,
+                agent_id=agent_id,
+            )
+            store.append_episode(episode)
+
+            genes = store.load_genes()
+            new_gene = Gene(
+                id=gene_id,
+                title=title,
+                category=args.category,
+                trigger=trigger or symptom,
+                strategy=args.strategy.strip() or args.fix.strip(),
+                anti_pattern=args.anti_pattern.strip(),
+                success_count=1 if is_verified else 0,
+                failure_count=1 if args.failed else 0,
+                verified_gate=is_verified,
+                created_at=now_iso,
+                last_used_at=now_iso,
+                contributors=[agent_id],
+            )
+            genes.append(new_gene)
+            governed = govern_genes(genes, cfg)
+            store.save_genes(governed)
         _safe_print(
             f"[EVLOP Log] Recorded episode {episode.episode_id} (agent={agent_id}) -> gene {gene_id} (verified={is_verified})"
         )
         return 0
 
     if args.subcommand == "mutate":
-        genes = store.load_genes()
-        by_id = {g.id: g for g in genes}
-        if args.parent_id not in by_id:
-            _safe_print(f"[EVLOP Error] Parent gene '{args.parent_id}' not found.", file=sys.stderr)
-            return 1
-        parent = by_id[args.parent_id]
-        last_v = store.load_last_verify()
-        is_verified = bool(last_v and last_v.passed)
-        agent_id = args.agent_id.strip() or os.environ.get("EVLOP_AGENT_ID", "default-agent")
-        now_iso = utc_now_iso()
-        child_id = slugify_gene_id(args.title.strip())
-        if child_id == parent.id:
-            suffix = hashlib.sha1(f"{args.title}:{args.strategy}".encode("utf-8")).hexdigest()[:6]
-            child_id = f"{child_id}-gen{parent.generation + 1}-{suffix}"
+        with store.lock():
+            genes = store.load_genes()
+            by_id = {g.id: g for g in genes}
+            if args.parent_id not in by_id:
+                _safe_print(f"[EVLOP Error] Parent gene '{args.parent_id}' not found.", file=sys.stderr)
+                return 1
+            parent = by_id[args.parent_id]
+            last_v = store.load_last_verify()
+            is_verified = store.is_verify_fresh(last_v, ttl_minutes=cfg.verify_ttl_minutes)
+            agent_id = args.agent_id.strip() or os.environ.get("EVLOP_AGENT_ID", "default-agent")
+            now_iso = utc_now_iso()
+            child_id = slugify_gene_id(args.title.strip())
+            if child_id == parent.id:
+                suffix = hashlib.sha1(f"{args.title}:{args.strategy}".encode("utf-8")).hexdigest()[:6]
+                child_id = f"{child_id}-gen{parent.generation + 1}-{suffix}"
 
-        child_gene = Gene(
-            id=child_id,
-            title=args.title.strip(),
-            category=parent.category,
-            trigger=args.trigger.strip() or parent.trigger,
-            strategy=args.strategy.strip(),
-            anti_pattern=parent.anti_pattern,
-            success_count=1 if is_verified else 0,
-            failure_count=0,
-            verified_gate=is_verified,
-            created_at=now_iso,
-            last_used_at=now_iso,
-            parent_id=parent.id,
-            generation=parent.generation + 1,
-            mutation_reason=args.reason.strip(),
-            contributors=sorted(set(parent.contributors) | {agent_id}),
-        )
-        genes.append(child_gene)
-        governed = govern_genes(genes, cfg)
-        store.save_genes(governed)
+            child_gene = Gene(
+                id=child_id,
+                title=args.title.strip(),
+                category=parent.category,
+                trigger=args.trigger.strip() or parent.trigger,
+                strategy=args.strategy.strip(),
+                anti_pattern=parent.anti_pattern,
+                success_count=1 if is_verified else 0,
+                failure_count=0,
+                verified_gate=is_verified,
+                created_at=now_iso,
+                last_used_at=now_iso,
+                parent_id=parent.id,
+                generation=parent.generation + 1,
+                mutation_reason=args.reason.strip(),
+                contributors=sorted(set(parent.contributors) | {agent_id}),
+            )
+            genes.append(child_gene)
+            governed = govern_genes(genes, cfg)
+            store.save_genes(governed)
         _safe_print(
             f"[EVLOP Mutate] Evolved Gen-{child_gene.generation} gene '{child_gene.id}' from '{parent.id}'"
         )
@@ -249,14 +310,15 @@ def main(argv: list[str] | None = None, root_dir: Path | None = None) -> int:
         return 0
 
     if args.subcommand == "evolve":
-        genes = store.load_genes()
-        governed = govern_genes(genes, cfg)
-        store.save_genes(governed)
+        with store.lock():
+            genes = store.load_genes()
+            governed = govern_genes(genes, cfg)
+            store.save_genes(governed)
 
-        targets = [t.strip() for t in args.target.split(",") if t.strip()]
-        for rel_target in targets:
-            target_path = workspace / rel_target
-            inject_markdown_file(target_path, governed, max_genes=cfg.max_active_genes)
+            targets = [t.strip() for t in args.target.split(",") if t.strip()]
+            for rel_target in targets:
+                target_path = workspace / rel_target
+                inject_markdown_file(target_path, governed, max_genes=cfg.max_active_genes)
 
         promoted_cnt = sum(1 for g in governed if g.status == "promoted")
         archived_cnt = sum(1 for g in governed if g.status == "archived")

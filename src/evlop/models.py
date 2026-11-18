@@ -1,4 +1,4 @@
-"""Core data structures for EVLOP v2.0 episodes, genes, lineage trees, verification records, and config."""
+"""Core data structures for EVLOP episodes, genes, lineage trees, verification records, and failure diagnosis."""
 
 from __future__ import annotations
 
@@ -30,6 +30,7 @@ class EvlopConfig:
     promote_threshold: float = 1.15
     prune_threshold: float = 0.35
     half_life_days: float = 30.0
+    verify_ttl_minutes: float = 30.0
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -41,6 +42,7 @@ class EvlopConfig:
             promote_threshold=float(data.get("promote_threshold", 1.15)),
             prune_threshold=float(data.get("prune_threshold", 0.35)),
             half_life_days=float(data.get("half_life_days", 30.0)),
+            verify_ttl_minutes=float(data.get("verify_ttl_minutes", 30.0)),
         )
 
 
@@ -65,6 +67,30 @@ class VerifyRecord:
             timestamp=str(data.get("timestamp", "")),
             output_snippet=str(data.get("output_snippet", "")),
             duration_ms=float(data.get("duration_ms", 0.0)),
+        )
+
+
+@dataclass
+class FailureDiagnosis:
+    command: str
+    exit_code: int
+    timestamp: str
+    error_type: str
+    symptom_summary: str
+    output_snippet: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> FailureDiagnosis:
+        return cls(
+            command=str(data.get("command", "")),
+            exit_code=int(data.get("exit_code", 1)),
+            timestamp=str(data.get("timestamp", "")),
+            error_type=str(data.get("error_type", "ExecutionFailure")),
+            symptom_summary=str(data.get("symptom_summary", "")),
+            output_snippet=str(data.get("output_snippet", "")),
         )
 
 

@@ -1,0 +1,24 @@
+[
+  {
+    "id": "gene-use-decimal-with-round-half-up-and-10-000",
+    "title": "Use Decimal with ROUND_HALF_UP and 10,000 bps divisor for financial calculations",
+    "category": "debugging",
+    "trigger": "When encountering AssertionError in financial/billing tests or implementing monetary calculations involving Decimal, ROUND_HALF_UP, and basis points (bps)",
+    "strategy": "Always parse monetary inputs with decimal.Decimal, divide basis points (bps) by Decimal('10000') (10,000 bps == 100%), and quantize each intermediate calculation to Decimal('0.01') with rounding=ROUND_HALF_UP.",
+    "anti_pattern": "Never use binary float, standard round() (which uses round-half-to-even), or divide basis points (bps) by 100 instead of 10,000.",
+    "success_count": 2,
+    "failure_count": 0,
+    "verified_gate": true,
+    "created_at": "2026-11-17T23:59:09.741205+00:00",
+    "last_used_at": "2026-11-18T00:04:37.398152+00:00",
+    "status": "promoted",
+    "fitness": 1.743,
+    "parent_id": "",
+    "generation": 1,
+    "mutation_reason": "",
+    "contributors": [
+      "session-1-agent",
+      "session-2-agent"
+    ]
+  }
+]
