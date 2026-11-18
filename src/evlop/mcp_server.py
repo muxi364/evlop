@@ -1,4 +1,4 @@
-"""Zero-dependency Model Context Protocol (MCP) JSON-RPC 2.0 Server over stdio for EVLOP."""
+"""Zero-dependency Model Context Protocol (MCP) JSON-RPC 2.0 Server over stdio supporting multi-workspace mounting."""
 
 from __future__ import annotations
 
@@ -10,13 +10,30 @@ from typing import Any
 
 from evlop import __version__
 
+_WS_PROP = {
+    "type": "string",
+    "description": "Optional target project workspace directory path (allows one global MCP server to manage any repo).",
+}
+
 MCP_TOOLS: list[dict[str, Any]] = [
+    {
+        "name": "evlop_init_bootstrap",
+        "description": "Initialize and bootstrap EVLOP (.evlop/, AGENTS.md, CLAUDE.md, .cursorrules, .mcp.json) in a workspace.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "workspace_dir": _WS_PROP,
+                "with_hooks": {"type": "boolean", "default": True},
+            },
+        },
+    },
     {
         "name": "evlop_recall",
         "description": "[Stage E] Recall relevant evolved engineering genes before coding or debugging.",
         "inputSchema": {
             "type": "object",
             "properties": {
+                "workspace_dir": _WS_PROP,
                 "query": {"type": "string", "description": "Error keyword, symptom, or '*' for top genes"},
                 "top": {"type": "integer", "default": 5},
             },
@@ -29,6 +46,7 @@ MCP_TOOLS: list[dict[str, Any]] = [
         "inputSchema": {
             "type": "object",
             "properties": {
+                "workspace_dir": _WS_PROP,
                 "command": {"type": "string", "description": "Test or build command to execute"},
                 "timeout": {"type": "integer", "default": 120},
             },
@@ -41,6 +59,7 @@ MCP_TOOLS: list[dict[str, Any]] = [
         "inputSchema": {
             "type": "object",
             "properties": {
+                "workspace_dir": _WS_PROP,
                 "title": {"type": "string"},
                 "category": {
                     "type": "string",
@@ -61,13 +80,54 @@ MCP_TOOLS: list[dict[str, Any]] = [
         },
     },
     {
-        "name": "evlop_evolve",
-        "description": "[Stages O & P] Deduplicate, fitness-score, prune, and compile top genes into AGENTS.md and CLAUDE.md.",
+        "name": "evlop_mutate",
+        "description": "[Stage O - DGM Mode] Evolve a child gene mutation from an existing parent gene.",
         "inputSchema": {
             "type": "object",
             "properties": {
+                "workspace_dir": _WS_PROP,
+                "parent_id": {"type": "string"},
+                "title": {"type": "string"},
+                "strategy": {"type": "string"},
+                "reason": {"type": "string", "default": "Empirical refinement"},
+                "agent_id": {"type": "string", "default": "mcp-agent"},
+            },
+            "required": ["parent_id", "title", "strategy"],
+        },
+    },
+    {
+        "name": "evlop_lineage",
+        "description": "[Stage O - DGM Archive] Render the phylogenetic evolution tree of genes in Mermaid format.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "workspace_dir": _WS_PROP,
+                "out": {"type": "string", "default": ""},
+            },
+        },
+    },
+    {
+        "name": "evlop_evolve",
+        "description": "[Stages O & P] Deduplicate, fitness-score, supersede ancestors, and compile top genes into AGENTS.md and CLAUDE.md.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "workspace_dir": _WS_PROP,
                 "target": {"type": "string", "default": "AGENTS.md,CLAUDE.md"},
             },
+        },
+    },
+    {
+        "name": "evlop_dag_run",
+        "description": "[HomeRail Mode] Execute a heterogeneous multi-agent DAG workflow in topological parallel waves.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "workspace_dir": _WS_PROP,
+                "spec": {"type": "string", "description": "Path to DAG specification JSON file"},
+                "run_id": {"type": "string", "default": ""},
+            },
+            "required": ["spec"],
         },
     },
     {
@@ -75,7 +135,9 @@ MCP_TOOLS: list[dict[str, Any]] = [
         "description": "Inspect EVLOP genome health, promoted genes, swarm contributors, and max generation.",
         "inputSchema": {
             "type": "object",
-            "properties": {},
+            "properties": {
+                "workspace_dir": _WS_PROP,
+            },
         },
     },
 ]
@@ -126,8 +188,13 @@ def handle_mcp_request(req: dict[str, Any], workspace: Path) -> dict[str, Any] |
     if method == "tools/call":
         name = params.get("name", "")
         args = params.get("arguments") or {}
+        eff_workspace = Path(str(args["workspace_dir"])).resolve() if args.get("workspace_dir") else workspace
 
-        if name == "evlop_recall":
+        if name == "evlop_init_bootstrap":
+            argv = ["init", "--bootstrap"]
+            if args.get("with_hooks", True):
+                argv.append("--with-hooks")
+        elif name == "evlop_recall":
             argv = ["recall", str(args.get("query", "*")), "--top", str(args.get("top", 5))]
         elif name == "evlop_verify":
             argv = ["verify", str(args["command"]), "--timeout", str(args.get("timeout", 120))]
@@ -151,8 +218,25 @@ def handle_mcp_request(req: dict[str, Any], workspace: Path) -> dict[str, Any] |
                 argv.extend(["--strategy", str(args["strategy"])])
             if args.get("anti_pattern"):
                 argv.extend(["--anti-pattern", str(args["anti_pattern"])])
+        elif name == "evlop_mutate":
+            argv = [
+                "mutate",
+                "--parent-id", str(args["parent_id"]),
+                "--title", str(args["title"]),
+                "--strategy", str(args["strategy"]),
+                "--reason", str(args.get("reason", "Empirical refinement")),
+                "--agent-id", str(args.get("agent_id", "mcp-agent")),
+            ]
+        elif name == "evlop_lineage":
+            argv = ["lineage", "--mermaid"]
+            if args.get("out"):
+                argv.extend(["--out", str(args["out"])])
         elif name == "evlop_evolve":
             argv = ["evolve", "--target", str(args.get("target", "AGENTS.md,CLAUDE.md"))]
+        elif name == "evlop_dag_run":
+            argv = ["dag", "run", str(args["spec"])]
+            if args.get("run_id"):
+                argv.extend(["--run-id", str(args["run_id"])])
         elif name == "evlop_status":
             argv = ["status", "--json"]
         else:
@@ -162,7 +246,7 @@ def handle_mcp_request(req: dict[str, Any], workspace: Path) -> dict[str, Any] |
                 "error": {"code": -32601, "message": f"Unknown tool: {name}"},
             }
 
-        rc, out_text = _invoke_cli_capture(argv, workspace=workspace)
+        rc, out_text = _invoke_cli_capture(argv, workspace=eff_workspace)
         return {
             "jsonrpc": "2.0",
             "id": req_id,

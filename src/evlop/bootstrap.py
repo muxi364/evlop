@@ -1,4 +1,4 @@
-"""Turnkey cross-project bootstrapper so any Agent can adopt EVLOP in one command."""
+"""Turnkey cross-project bootstrapper so any Agent or IDE can mount EVLOP in one command."""
 
 from __future__ import annotations
 
@@ -35,17 +35,17 @@ def bootstrap_workspace(
 ) -> list[Path]:
     """
     Vendor a zero-dependency standalone EVLOP runner into `target_dir/.evlop/`
-    and initialize `AGENTS.md`, `CLAUDE.md`, `.cursorrules`, and optional `.claude/settings.json`.
+    and initialize `AGENTS.md`, `CLAUDE.md`, `.cursorrules`, `.mcp.json`, and optional `.claude/settings.json`.
     """
     target_dir = Path(target_dir).resolve()
     evlop_dir = target_dir / ".evlop"
     vendor_pkg_dir = evlop_dir / "vendor" / "evlop"
     vendor_pkg_dir.mkdir(parents=True, exist_ok=True)
 
-    # Copy all current evlop package modules into .evlop/vendor/evlop/ so the target project is 100% standalone
     src_pkg_dir = Path(__file__).resolve().parent
-    for py_file in src_pkg_dir.glob("*.py"):
-        shutil.copy2(py_file, vendor_pkg_dir / py_file.name)
+    if src_pkg_dir.name == "evlop" and (src_pkg_dir / "cli.py").exists():
+        for py_file in src_pkg_dir.glob("*.py"):
+            shutil.copy2(py_file, vendor_pkg_dir / py_file.name)
 
     runner_path = evlop_dir / "evlop_runner.py"
     runner_code = '''#!/usr/bin/env python3
@@ -76,6 +76,21 @@ if __name__ == "__main__":
             )
         inject_markdown_file(doc_path, genes, max_genes=max_genes)
         created.append(doc_path)
+
+    mcp_json_path = target_dir / ".mcp.json"
+    mcp_payload = {
+        "mcpServers": {
+            "evlop": {
+                "command": "python",
+                "args": [".evlop/evlop_runner.py", "mcp"],
+            }
+        }
+    }
+    mcp_json_path.write_text(
+        json.dumps(mcp_payload, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    created.append(mcp_json_path)
 
     if with_hooks:
         claude_dir = target_dir / ".claude"

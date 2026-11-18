@@ -116,31 +116,18 @@ python -m evlop scorecard demo-rail-001
 python -m evlop replay demo-rail-001 --from-node deterministic_gate
 ```
 
-### 3. 让任何其他 Agent 一键零依赖接入 EVLOP（工程级全自动引导）
+### 3. 六大全系统整体挂载模式（Whole-System Mounting Matrix — 适配任意宿主与框架）
 
-- **方式 A：跨项目一键全量引导（推荐 — 零依赖免安装）**
-  在任意目标项目上运行一行命令：
-  ```bash
-  python -m evlop init --target-dir /path/to/your-project --bootstrap --with-hooks
-  ```
-  该命令会自动在目标项目中生成：
-  1. `.evlop/evlop_runner.py`（内嵌完整引擎副本，目标项目无需 `pip install` 或配置 `PYTHONPATH` 即可直接运行 `python .evlop/evlop_runner.py ...`）
-  2. `AGENTS.md`、`CLAUDE.md`、`.cursorrules`（预置五步协议与自动进化的 `<!-- EVLOP:START -->` 基因块）
-  3. `.claude/settings.json`（会话启动与结束自动触发 `evlop evolve` 的生命周期钩子）
-- **方式 B：原生 MCP Server 接入（JSON-RPC 2.0 over stdio）**
-  支持 Claude Desktop、Claude Code、Antigravity、Cursor 直接作为 MCP Server 挂载（提供 `evlop_recall`、`evlop_verify`、`evlop_log`、`evlop_evolve`、`evlop_status` 五大原生工具）：
-  ```json
-  {
-    "mcpServers": {
-      "evlop": {
-        "command": "python",
-        "args": ["-m", "evlop", "mcp"]
-      }
-    }
-  }
-  ```
-- **方式 C：报错即召回（Auto-Recall on Verify Failure）**
-  当 Agent 运行 `evlop verify` 测试失败时，引擎会自动解析报错栈提取异常类型（写入 `.evlop/last_failure.json`），并实时检索基因库在终端打印 `[EVLOP Auto-Recall Hint]`；修复后运行 `evlop log --from-last-failure` 即可自动关联报错上下文。实测双智能体盲测报告见 👉 **[docs/cross-agent-verification-report.md](./docs/cross-agent-verification-report.md)**。
+为了确保任何外部系统、IDE 或多智能体框架都能**整体无缝挂载**本仓库，EVLOP v4.0 提供了经过自动化测试验证的 **6 种零摩擦挂载方式**：
+
+| 挂载模式 | 适用宿主 / 框架 | 一键整体挂载方式 |
+| :--- | :--- | :--- |
+| **1. 单文件零依赖空投挂载**<br>*(Single-File Drop-in)* | 任何受限容器、CI 沙盒、无网络环境 | 直接复制根目录单文件 [`evlop_standalone.py`](./evlop_standalone.py)（内嵌全部 12 个核心模块，零第三方依赖），直接运行 `python evlop_standalone.py init --bootstrap` |
+| **2. 原生插件整库挂载**<br>*(Native Plugin Mount)* | **Claude Code / Antigravity / Cursor** | 仓库根目录已内置标准 [`plugin.json`](./plugin.json)、[`.claude-plugin/plugin.json`](./.claude-plugin/plugin.json)、[`.mcp.json`](./.mcp.json) 与 [`skills/evlop/SKILL.md`](./skills/evlop/SKILL.md)，直接作为插件目录整体加载 |
+| **3. 全局跨工作区 MCP 挂载**<br>*(Multi-Workspace MCP)* | **Claude Desktop / Cline / Windsurf / Zed** | 挂载 `python evlop_standalone.py mcp`，暴露全部 **9 个原生 MCP 工具**（每个工具均支持传入 `workspace_dir` 参数，单个全局 MCP 进程即可管理本机任意项目） |
+| **4. Python SDK 编程级挂载**<br>*(Programmatic SDK)* | **LangGraph / AutoGen / CrewAI / 自研 Agent** | 直接 `from evlop import EvlopEngine`，通过 `engine.recall()`、`engine.verify()`、`engine.log_experience()`、`engine.evolve()`、`engine.run_dag()` 编程调用 |
+| **5. 跨项目独立引导注入**<br>*(Workspace Bootstrapper)* | 任意现有代码仓库 | 运行 `python -m evlop init --target-dir /path/to/repo --bootstrap --with-hooks`，自动注入 `.evlop/evlop_runner.py`、`AGENTS.md`、`CLAUDE.md`、`.cursorrules`、`.mcp.json` 与 `.claude/settings.json` |
+| **6. HomeRail 异构 DAG 挂载**<br>*(DAG Rail & CI Gate)* | 异构多智能体并发集群（Claude + Codex + Gemini） | 运行 `python evlop_standalone.py dag run templates/homerail-heterogeneous-dag.json`，自动按拓扑波次并发调度、故障自愈重试并输出 Scorecard 计分卡 |
 
 ---
 

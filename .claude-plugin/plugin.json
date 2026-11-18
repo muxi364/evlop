@@ -1,0 +1,11 @@
+{
+  "name": "evlop",
+  "version": "0.4.0",
+  "description": "EVLOP: Universal Self-Evolving Agent Framework, Darwinian Memory & HomeRail Heterogeneous DAG Engine",
+  "author": {
+    "name": "muxi364",
+    "url": "https://github.com/muxi364/evlop"
+  },
+  "skills": "./skills",
+  "mcpServers": "./.mcp.json"
+}
