@@ -68,6 +68,11 @@ def _build_parser() -> argparse.ArgumentParser:
         default=90.0,
         help="Minimum AST quality score required when --quality-gate is enabled (default 90.0)",
     )
+    p_verify.add_argument(
+        "--auto-evolve",
+        action="store_true",
+        help="Automatically distill and promote a gene into AGENTS.md/CLAUDE.md when transitioning from FAILED to PASSED",
+    )
 
     p_audit = sub.add_parser(
         "audit",
@@ -321,6 +326,56 @@ def main(argv: list[str] | None = None, root_dir: Path | None = None) -> int:
                     _safe_print(f"\n[EVLOP Auto-Recall Hint] Found {len(hints)} matching gene(s) for {diag.error_type}:")
                     for h in hints:
                         _safe_print(f"  * {h.title} ({h.id}): {h.strategy}")
+            elif args.auto_evolve:
+                prior_fail = store.load_last_failure()
+                if prior_fail is not None:
+                    now_iso = utc_now_iso()
+                    agent_id = os.environ.get("EVLOP_AGENT_ID", "auto-evolve-agent")
+                    auto_title = f"Resolve {prior_fail.error_type} in verification gate"
+                    gene_id = slugify_gene_id(auto_title)
+                    ep_hash = hashlib.sha1(f"{now_iso}:{gene_id}".encode("utf-8")).hexdigest()[:10]
+                    ep = Episode(
+                        episode_id=f"ep-{ep_hash}",
+                        timestamp=now_iso,
+                        task_summary=f"Auto-evolved RED->GREEN fix for {prior_fail.error_type}",
+                        failure_symptom=f"{prior_fail.error_type}: {prior_fail.symptom_summary}",
+                        root_cause=prior_fail.symptom_summary,
+                        fix_applied=f"Verified passing command: {record.command}",
+                        verified=True,
+                        verify_cmd=record.command,
+                        gene_id=gene_id,
+                        agent_id=agent_id,
+                    )
+                    store.append_episode(ep)
+                    genes = store.load_genes()
+                    genes.append(
+                        Gene(
+                            id=gene_id,
+                            title=auto_title,
+                            category="debugging",
+                            trigger=f"{prior_fail.error_type} {prior_fail.symptom_summary}",
+                            strategy=f"Guard against `{prior_fail.error_type}` ({prior_fail.symptom_summary}) and verify with `{record.command}`",
+                            anti_pattern=f"Unchecked condition causing {prior_fail.error_type}",
+                            success_count=1,
+                            failure_count=0,
+                            verified_gate=True,
+                            created_at=now_iso,
+                            last_used_at=now_iso,
+                            contributors=[agent_id],
+                            best_duration_ms=record.duration_ms,
+                        )
+                    )
+                    governed = govern_genes(genes, cfg)
+                    store.save_genes(governed)
+                    for target_doc in ("AGENTS.md", "CLAUDE.md"):
+                        inject_markdown_file(workspace / target_doc, governed, max_genes=cfg.max_active_genes)
+                    try:
+                        store.failure_file.unlink()
+                    except OSError:
+                        pass
+                    _safe_print(
+                        f"[EVLOP Auto-Evolve] RED->GREEN transition detected! Automatically promoted gene '{gene_id}' into AGENTS.md & CLAUDE.md."
+                    )
         return 0 if record.passed else (record.exit_code or 1)
 
     if args.subcommand == "log":

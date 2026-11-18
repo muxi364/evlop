@@ -107,6 +107,52 @@ def compute_sum(values: list[int]) -> int:
             )
             self.assertEqual(rc, 0)
 
+    def test_zero_friction_red_to_green_auto_evolve(self):
+        """Verify `evlop verify --auto-evolve` automatically distills and promotes a gene on a RED -> GREEN transition with 0 manual log/evolve calls."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            main(["init", "--bootstrap"], root_dir=root)
+
+            calc_py = root / "calc.py"
+            # Step 1 (RED): Buggy division without zero guard
+            calc_py.write_text(
+                "def safe_divide(a: float, b: float) -> float:\n    return a / b\n",
+                encoding="utf-8",
+            )
+            rc_red = main(
+                [
+                    "verify",
+                    f"\"{sys.executable}\" -c \"import calc; assert calc.safe_divide(10, 0) == 0.0\"",
+                    "--auto-evolve",
+                ],
+                root_dir=root,
+            )
+            self.assertNotEqual(rc_red, 0)
+            self.assertTrue((root / ".evlop" / "last_failure.json").exists())
+
+            # Step 2 (GREEN): Agent fixes calc.py and re-runs `verify --auto-evolve` (NO manual `log` or `evolve` call!)
+            calc_py.write_text(
+                "def safe_divide(a: float, b: float) -> float:\n    return 0.0 if b == 0 else a / b\n",
+                encoding="utf-8",
+            )
+            rc_green = main(
+                [
+                    "verify",
+                    f"\"{sys.executable}\" -c \"import calc; assert calc.safe_divide(10, 0) == 0.0\"",
+                    "--auto-evolve",
+                ],
+                root_dir=root,
+            )
+            self.assertEqual(rc_green, 0)
+
+            # Verify a new ZeroDivisionError gene was automatically logged, promoted, and compiled into AGENTS.md!
+            genes = json.loads((root / ".evlop" / "genes.json").read_text(encoding="utf-8"))
+            zdiv_genes = [g for g in genes if "ZeroDivisionError" in g["title"] or "ZeroDivisionError" in g["trigger"]]
+            self.assertEqual(len(zdiv_genes), 1)
+            self.assertEqual(zdiv_genes[0]["status"], "promoted")
+            agents_md = (root / "AGENTS.md").read_text(encoding="utf-8")
+            self.assertIn("ZeroDivisionError", agents_md)
+
 
 if __name__ == "__main__":
     unittest.main()
