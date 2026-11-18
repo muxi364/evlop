@@ -1,0 +1,8 @@
+{
+  "command": "python -m unittest discover -s . -p test_scenario_scheduler.py -v",
+  "exit_code": 0,
+  "passed": true,
+  "timestamp": "2026-11-18T02:07:25.904662+00:00",
+  "output_snippet": "[Benchmark] 2,000-node DAG scheduled in 30.62 ms\n\ntest_2000_node_dag_sub_100ms_benchmark (test_scenario_scheduler.TestScenarioScheduler.test_2000_node_dag_sub_100ms_benchmark) ... ok\ntest_cycle_and_missing_dependency_detection (test_scenario_scheduler.TestScenarioScheduler.test_cycle_and_missing_dependency_detection) ... ok\ntest_diamond_dag_waves_and_critical_path (test_scenario_scheduler.TestScenarioScheduler.test_diamond_dag_waves_and_critical_path) ... ok\ntest_empty_dag (test_scenario_scheduler.TestScenarioScheduler.test_empty_dag) ... ok\ntest_priority_ordering_and_lexicographical_tie_break (test_scenario_scheduler.TestScenarioScheduler.test_priority_ordering_and_lexicographical_tie_break) ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 0.045s\n\nOK",
+  "duration_ms": 839.91
+}

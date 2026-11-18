@@ -73,6 +73,11 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Automatically distill and promote a gene into AGENTS.md/CLAUDE.md when transitioning from FAILED to PASSED",
     )
+    p_verify.add_argument(
+        "--agent-id",
+        default="",
+        help="Swarm agent identifier for isolated per-agent verification state",
+    )
 
     p_audit = sub.add_parser(
         "audit",
@@ -312,22 +317,23 @@ def main(argv: list[str] | None = None, root_dir: Path | None = None) -> int:
                 record.output_snippet = (
                     f"{record.output_snippet}\n[EVLOP Quality Gate FAILED] AST Score {q_rep.score} < {q_rep.min_score}: {findings_txt}"
                 ).strip()
+        v_agent_id = args.agent_id.strip() or os.environ.get("EVLOP_AGENT_ID", "default-agent")
         with store.lock():
-            store.save_verify(record)
+            store.save_verify(record, agent_id=v_agent_id)
             status_str = "PASSED" if record.passed else f"FAILED (exit={record.exit_code})"
             _safe_print(f"[EVLOP Verify] {status_str} ({record.duration_ms:.1f}ms) -> {record.command}")
             if record.output_snippet:
                 _safe_print(record.output_snippet)
             if not record.passed:
                 diag = extract_failure_diagnosis(record)
-                store.save_failure(diag)
+                store.save_failure(diag, agent_id=v_agent_id)
                 hints = store.recall_genes(f"{diag.error_type} {diag.symptom_summary}", top_k=3)
                 if hints:
                     _safe_print(f"\n[EVLOP Auto-Recall Hint] Found {len(hints)} matching gene(s) for {diag.error_type}:")
                     for h in hints:
                         _safe_print(f"  * {h.title} ({h.id}): {h.strategy}")
             elif args.auto_evolve:
-                prior_fail = store.load_last_failure()
+                prior_fail = store.load_last_failure(agent_id=v_agent_id)
                 if prior_fail is not None:
                     now_iso = utc_now_iso()
                     agent_id = os.environ.get("EVLOP_AGENT_ID", "auto-evolve-agent")
@@ -380,18 +386,18 @@ def main(argv: list[str] | None = None, root_dir: Path | None = None) -> int:
 
     if args.subcommand == "log":
         with store.lock():
-            last_v = store.load_last_verify()
+            agent_id = args.agent_id.strip() or os.environ.get("EVLOP_AGENT_ID", "default-agent")
+            last_v = store.load_last_verify(agent_id=agent_id)
             is_verified = bool(
                 store.is_verify_fresh(last_v, ttl_minutes=cfg.verify_ttl_minutes)
                 and not args.failed
             )
             verify_cmd = last_v.command if last_v else ""
-            agent_id = args.agent_id.strip() or os.environ.get("EVLOP_AGENT_ID", "default-agent")
 
             symptom = args.symptom.strip()
             trigger = args.trigger.strip()
             if args.from_last_failure:
-                last_fail = store.load_last_failure()
+                last_fail = store.load_last_failure(agent_id=agent_id)
                 if last_fail:
                     if not symptom:
                         symptom = f"{last_fail.error_type}: {last_fail.symptom_summary}"

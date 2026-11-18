@@ -1,0 +1,8 @@
+{
+  "command": "python -m unittest discover -s . -p test_scenario_security.py -v",
+  "exit_code": 0,
+  "passed": true,
+  "timestamp": "2026-11-18T02:08:52.200203+00:00",
+  "output_snippet": "[BENCHMARK] Redacted 20,000 lines in 95.39ms (209,670 lines/sec)\n\ntest_redact_bearer_jwt_and_api_tokens (test_scenario_security.TestSecuritySanitizer.test_redact_bearer_jwt_and_api_tokens) ... ok\ntest_redact_combined_single_pass (test_scenario_security.TestSecuritySanitizer.test_redact_combined_single_pass) ... ok\ntest_redact_email_addresses (test_scenario_security.TestSecuritySanitizer.test_redact_email_addresses) ... ok\ntest_redact_secret_keys (test_scenario_security.TestSecuritySanitizer.test_redact_secret_keys) ... ok\ntest_safe_resolve_path_blocks_traversal_and_prefix_tricks (test_scenario_security.TestSecuritySanitizer.test_safe_resolve_path_blocks_traversal_and_prefix_tricks) ... ok\ntest_safe_resolve_path_valid (test_scenario_security.TestSecuritySanitizer.test_safe_resolve_path_valid) ... ok\ntest_throughput_20000_lines_under_150ms (test_scenario_security.TestSecuritySanitizer.test_throughput_20000_lines_under_150ms) ... ok\n\n----------------------------------------------------------------------\nRan 7 tests in 0.163s\n\nOK",
+  "duration_ms": 1087.67
+}

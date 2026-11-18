@@ -109,9 +109,18 @@ class EvlopStore:
         self.config_file = self.evlop_dir / "config.json"
         self.verify_file = self.evlop_dir / "last_verify.json"
         self.failure_file = self.evlop_dir / "last_failure.json"
+        self.verify_state_dir = self.evlop_dir / "verify_state"
         self.episodes_file = self.evlop_dir / "episodes.jsonl"
         self.genes_file = self.evlop_dir / "genes.json"
         self.lock_file = self.evlop_dir / ".lock"
+
+    def _agent_verify_file(self, agent_id: str) -> Path:
+        safe_id = "".join(ch if ch.isalnum() or ch in ("-", "_") else "_" for ch in agent_id.strip())
+        return self.verify_state_dir / f"last_verify_{safe_id}.json"
+
+    def _agent_failure_file(self, agent_id: str) -> Path:
+        safe_id = "".join(ch if ch.isalnum() or ch in ("-", "_") else "_" for ch in agent_id.strip())
+        return self.verify_state_dir / f"last_failure_{safe_id}.json"
 
     @contextmanager
     def lock(self, timeout_sec: float = 10.0) -> Iterator[None]:
@@ -171,13 +180,18 @@ class EvlopStore:
             json.dumps(config.to_dict(), indent=2, ensure_ascii=False) + "\n",
         )
 
-    def save_verify(self, record: VerifyRecord) -> None:
-        _atomic_write_text(
-            self.verify_file,
-            json.dumps(record.to_dict(), indent=2, ensure_ascii=False) + "\n",
-        )
+    def save_verify(self, record: VerifyRecord, agent_id: str = "") -> None:
+        payload_txt = json.dumps(record.to_dict(), indent=2, ensure_ascii=False) + "\n"
+        _atomic_write_text(self.verify_file, payload_txt)
+        if agent_id and agent_id != "default-agent":
+            _atomic_write_text(self._agent_verify_file(agent_id), payload_txt)
 
-    def load_last_verify(self) -> VerifyRecord | None:
+    def load_last_verify(self, agent_id: str = "") -> VerifyRecord | None:
+        if agent_id and agent_id != "default-agent":
+            agent_vf = self._agent_verify_file(agent_id)
+            if agent_vf.exists():
+                data = json.loads(agent_vf.read_text(encoding="utf-8"))
+                return VerifyRecord.from_dict(data)
         if not self.verify_file.exists():
             return None
         data = json.loads(self.verify_file.read_text(encoding="utf-8"))
@@ -197,13 +211,18 @@ class EvlopStore:
         except (ValueError, TypeError):
             return False
 
-    def save_failure(self, diag: FailureDiagnosis) -> None:
-        _atomic_write_text(
-            self.failure_file,
-            json.dumps(diag.to_dict(), indent=2, ensure_ascii=False) + "\n",
-        )
+    def save_failure(self, diag: FailureDiagnosis, agent_id: str = "") -> None:
+        payload_txt = json.dumps(diag.to_dict(), indent=2, ensure_ascii=False) + "\n"
+        _atomic_write_text(self.failure_file, payload_txt)
+        if agent_id and agent_id != "default-agent":
+            _atomic_write_text(self._agent_failure_file(agent_id), payload_txt)
 
-    def load_last_failure(self) -> FailureDiagnosis | None:
+    def load_last_failure(self, agent_id: str = "") -> FailureDiagnosis | None:
+        if agent_id and agent_id != "default-agent":
+            agent_ff = self._agent_failure_file(agent_id)
+            if agent_ff.exists():
+                data = json.loads(agent_ff.read_text(encoding="utf-8"))
+                return FailureDiagnosis.from_dict(data)
         if not self.failure_file.exists():
             return None
         data = json.loads(self.failure_file.read_text(encoding="utf-8"))

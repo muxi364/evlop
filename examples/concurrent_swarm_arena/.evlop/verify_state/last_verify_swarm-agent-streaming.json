@@ -1,0 +1,8 @@
+{
+  "command": "python -m unittest discover -s . -p test_scenario_streaming.py -v",
+  "exit_code": 0,
+  "passed": true,
+  "timestamp": "2026-11-18T02:05:05.759262+00:00",
+  "output_snippet": "test_duplicate_extrema_values (test_scenario_streaming.TestSlidingWindowStats.test_duplicate_extrema_values)\nVerify duplicate min/max values survive until the latest instance expires. ... ok\ntest_empty_window_safety (test_scenario_streaming.TestSlidingWindowStats.test_empty_window_safety)\nVerify safe zeroed stats before any events and after full expiration. ... ok\ntest_exact_window_eviction_and_monotonic_extrema (test_scenario_streaming.TestSlidingWindowStats.test_exact_window_eviction_and_monotonic_extrema)\nVerify exact boundary eviction and min/max transitions as extrema expire. ... ok\ntest_invalid_window_size_raises (test_scenario_streaming.TestSlidingWindowStats.test_invalid_window_size_raises)\nEnsure non-positive window sizes are rejected. ... ok\ntest_throughput_benchmark_50k_events (test_scenario_streaming.TestSlidingWindowStats.test_throughput_benchmark_50k_events)\nAssert 50,000 events are processed and queried in < 250ms (> 200k events/sec). ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 0.111s\n\nOK",
+  "duration_ms": 1121.81
+}

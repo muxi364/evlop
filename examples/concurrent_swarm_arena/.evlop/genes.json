@@ -1,0 +1,178 @@
+[
+  {
+    "id": "gene-seed-algorithmic-complexity",
+    "title": "Enforce O(N) / O(1) Algorithmic Complexity and Pre-Compiled Invariants",
+    "category": "architecture",
+    "trigger": "Implementing loops, search, reconciliation, rate limiting, or data processing",
+    "strategy": "Use hash/dict/set indexes or monotonic deques for O(1)/O(N) lookup; hoist re.compile() and file I/O outside loops; benchmark throughput.",
+    "anti_pattern": "Writing O(N^2) nested scans, calling re.compile() or Path.read_text() inside loops.",
+    "success_count": 3,
+    "failure_count": 0,
+    "verified_gate": true,
+    "created_at": "2026-11-18T02:01:29.682697+00:00",
+    "last_used_at": "2026-11-18T02:01:29.682697+00:00",
+    "status": "promoted",
+    "fitness": 2.1326,
+    "parent_id": "",
+    "generation": 1,
+    "mutation_reason": "",
+    "contributors": [
+      "evlop-seed-genome"
+    ],
+    "best_duration_ms": 5.0
+  },
+  {
+    "id": "gene-seed-numerical-and-boundary-safety",
+    "title": "Enforce Exact Numerical Precision, Explicit UTF-8 I/O, and Boundary Guards",
+    "category": "debugging",
+    "trigger": "Financial/rate math, file I/O, or handling empty/None/concurrent inputs",
+    "strategy": "Use decimal.Decimal with ROUND_HALF_UP for exact rates/money, pass encoding='utf-8' to all file/subprocess I/O, and guard empty/boundary inputs.",
+    "anti_pattern": "Using binary float for exact decimals, omitting encoding='utf-8', or writing bare except: pass blocks.",
+    "success_count": 3,
+    "failure_count": 0,
+    "verified_gate": true,
+    "created_at": "2026-11-18T02:01:29.682697+00:00",
+    "last_used_at": "2026-11-18T02:01:29.682697+00:00",
+    "status": "promoted",
+    "fitness": 2.1323,
+    "parent_id": "",
+    "generation": 1,
+    "mutation_reason": "",
+    "contributors": [
+      "evlop-seed-genome"
+    ],
+    "best_duration_ms": 8.0
+  },
+  {
+    "id": "gene-seed-deterministic-verification-and-ast-audit",
+    "title": "Enforce Deterministic Test Verification and AST Quality Gate Before Completion",
+    "category": "testing",
+    "trigger": "Completing any feature, bugfix, or refactoring task",
+    "strategy": "Write adversarial unit tests (boundary, concurrency, scale), run `evlop verify --quality-gate <path>`, and require 0 test failures and AST quality score >= 90.",
+    "anti_pattern": "Claiming completion based on reading diffs without running `evlop verify` and `evlop audit`.",
+    "success_count": 3,
+    "failure_count": 0,
+    "verified_gate": true,
+    "created_at": "2026-11-18T02:01:29.682697+00:00",
+    "last_used_at": "2026-11-18T02:01:29.682697+00:00",
+    "status": "promoted",
+    "fitness": 2.1321,
+    "parent_id": "",
+    "generation": 1,
+    "mutation_reason": "",
+    "contributors": [
+      "evlop-seed-genome"
+    ],
+    "best_duration_ms": 10.0
+  },
+  {
+    "id": "gene-seed-subagent-isolation-and-dag-waves",
+    "title": "Enforce Subagent Context Isolation and Topological DAG Wave Concurrency",
+    "category": "workflow",
+    "trigger": "Exploring >5 unfamiliar files or orchestrating multi-module agent workflows",
+    "strategy": "Isolate broad file exploration inside read-only subagents and execute independent multi-agent tasks in topological parallel waves via `evlop dag run`.",
+    "anti_pattern": "Dumping raw multi-file search outputs into the primary context window or running independent agents sequentially.",
+    "success_count": 3,
+    "failure_count": 0,
+    "verified_gate": true,
+    "created_at": "2026-11-18T02:01:29.682697+00:00",
+    "last_used_at": "2026-11-18T02:01:29.682697+00:00",
+    "status": "promoted",
+    "fitness": 2.1319,
+    "parent_id": "",
+    "generation": 1,
+    "mutation_reason": "",
+    "contributors": [
+      "evlop-seed-genome"
+    ],
+    "best_duration_ms": 12.0
+  },
+  {
+    "id": "gene-o-v-e-topological-wave-and-critical-path-d",
+    "title": "O(V+E) Topological Wave and Critical-Path DP Scheduler",
+    "category": "architecture",
+    "trigger": "Recursive DFS critical-path search hits RecursionError or exponential blowup on dense DAGs",
+    "strategy": "Run Kahn O(V+E) wave sort followed by single-pass forward DP for critical path",
+    "anti_pattern": "Blindly guessing without verification",
+    "success_count": 1,
+    "failure_count": 0,
+    "verified_gate": true,
+    "created_at": "2026-11-18T02:08:02.406520+00:00",
+    "last_used_at": "2026-11-18T02:08:02.406520+00:00",
+    "status": "promoted",
+    "fitness": 1.3831,
+    "parent_id": "",
+    "generation": 1,
+    "mutation_reason": "",
+    "contributors": [
+      "swarm-agent-scheduler"
+    ],
+    "best_duration_ms": 839.91
+  },
+  {
+    "id": "gene-idempotent-double-entry-decimal-ledger-wit",
+    "title": "Idempotent Double-Entry Decimal Ledger with 10000-bps Fee Conservation",
+    "category": "debugging",
+    "trigger": "Duplicate transaction replay and float rounding drift corrupt account balances",
+    "strategy": "Cache receipts by tx_id and compute fee via Decimal(fee_bps)/Decimal(10000) with ROUND_HALF_UP",
+    "anti_pattern": "Blindly guessing without verification",
+    "success_count": 1,
+    "failure_count": 0,
+    "verified_gate": true,
+    "created_at": "2026-11-18T02:06:01.468053+00:00",
+    "last_used_at": "2026-11-18T02:06:01.468053+00:00",
+    "status": "promoted",
+    "fitness": 1.38,
+    "parent_id": "",
+    "generation": 1,
+    "mutation_reason": "",
+    "contributors": [
+      "swarm-agent-ledger"
+    ],
+    "best_duration_ms": 1007.08
+  },
+  {
+    "id": "gene-single-pass-alternation-regex-redactor-and",
+    "title": "Single-Pass Alternation Regex Redactor and Canonical Path Guard",
+    "category": "tooling",
+    "trigger": "Sequential regex substitutions and string-prefix path checks are slow and bypassable",
+    "strategy": "Pre-compile a single combined named-group regex at module load and enforce Path.resolve().is_relative_to()",
+    "anti_pattern": "Blindly guessing without verification",
+    "success_count": 1,
+    "failure_count": 0,
+    "verified_gate": true,
+    "created_at": "2026-11-18T02:09:28.836718+00:00",
+    "last_used_at": "2026-11-18T02:09:28.836718+00:00",
+    "status": "promoted",
+    "fitness": 1.3788,
+    "parent_id": "",
+    "generation": 1,
+    "mutation_reason": "",
+    "contributors": [
+      "swarm-agent-security"
+    ],
+    "best_duration_ms": 1087.67
+  },
+  {
+    "id": "gene-o-1-amortized-monotonic-deque-sliding-wind",
+    "title": "O(1) Amortized Monotonic Deque Sliding Window",
+    "category": "architecture",
+    "trigger": "O(N) min/max/sum recalculation over sliding window degrades streaming throughput",
+    "strategy": "Maintain monotonic min/max deques and running sum for O(1) amortized updates",
+    "anti_pattern": "Blindly guessing without verification",
+    "success_count": 1,
+    "failure_count": 0,
+    "verified_gate": true,
+    "created_at": "2026-11-18T02:06:02.736888+00:00",
+    "last_used_at": "2026-11-18T02:06:02.736888+00:00",
+    "status": "promoted",
+    "fitness": 1.3782,
+    "parent_id": "",
+    "generation": 1,
+    "mutation_reason": "",
+    "contributors": [
+      "swarm-agent-streaming"
+    ],
+    "best_duration_ms": 1121.81
+  }
+]

@@ -1,0 +1,8 @@
+{
+  "command": "python -m unittest discover -s . -p test_scenario_ledger.py -v",
+  "exit_code": 0,
+  "passed": true,
+  "timestamp": "2026-11-18T02:05:26.988733+00:00",
+  "output_snippet": "[BENCHMARK] 10,000 transfers completed in 65.78 ms (152,024 transfers/sec)\n\ntest_exact_basis_point_fee_rounding_half_up (test_scenario_ledger.TestDoubleEntryLedger.test_exact_basis_point_fee_rounding_half_up)\nVerify ROUND_HALF_UP on half-cent boundary fees. ... ok\ntest_idempotent_replay_protection (test_scenario_ledger.TestDoubleEntryLedger.test_idempotent_replay_protection)\nVerify re-submitting the same tx_id returns original receipt without double-charging. ... ok\ntest_overdraft_and_invalid_amount_rejection (test_scenario_ledger.TestDoubleEntryLedger.test_overdraft_and_invalid_amount_rejection)\nVerify negative, zero, malformed, and overdraft transfers are cleanly rejected. ... ok\ntest_ten_thousand_transfers_zero_sum_and_throughput (test_scenario_ledger.TestDoubleEntryLedger.test_ten_thousand_transfers_zero_sum_and_throughput)\nVerify 10,000 transfers conserve zero-sum invariant in < 200ms. ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.073s\n\nOK",
+  "duration_ms": 1007.08
+}

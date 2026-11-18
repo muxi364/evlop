@@ -1,0 +1,8 @@
+{
+  "command": "python -m unittest discover -s . -p test_scenario_security.py -v",
+  "exit_code": 1,
+  "timestamp": "2026-11-18T02:07:47.837348+00:00",
+  "error_type": "AssertionError",
+  "symptom_summary": "AssertionError: '[REDACTED_EMAIL]' not found in '2026-11-18T02:00:00Z INFO user=ops.lead@enterprise.io auth=[REDACTED_TOKEN] key=[REDACTED_KEY]'",
+  "output_snippet": "rent_swarm_arena\\test_scenario_security.py\", line 44, in test_redact_email_addresses\n    self.assertEqual(\nAssertionError: 'Pass[13 chars]quested for alice.sec+tag_01@sub.example-corp.io from 10.0.0.1' != 'Pass[13 chars]quested for [REDACTED_EMAIL] from 10.0.0.1'\n- Password reset requested for alice.sec+tag_01@sub.example-corp.io from 10.0.0.1\n+ Password reset requested for [REDACTED_EMAIL] from 10.0.0.1\n\n\n======================================================================\nFAIL: test_throughput_20000_lines_under_150ms (test_scenario_security.TestSecuritySanitizer.test_throughput_20000_lines_under_150ms)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\lenovo\\.gemini\\antigravity\\scratch\\evlop\\examples\\concurrent_swarm_arena\\test_scenario_security.py\", line 111, in test_throughput_20000_lines_under_150ms\n    self.assertIn(\"[REDACTED_EMAIL]\", outputs[0])\nAssertionError: '[REDACTED_EMAIL]' not found in '2026-11-18T02:00:00Z INFO user=ops.lead@enterprise.io auth=[REDACTED_TOKEN] key=[REDACTED_KEY]'\n\n----------------------------------------------------------------------\nRan 7 tests in 0.168s\n\nFAILED (failures=3)"
+}

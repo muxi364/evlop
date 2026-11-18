@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .evlop/evlop_runner.py status"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .evlop/evlop_runner.py evolve --target AGENTS.md,CLAUDE.md,.cursorrules"
+          }
+        ]
+      }
+    ]
+  }
+}
