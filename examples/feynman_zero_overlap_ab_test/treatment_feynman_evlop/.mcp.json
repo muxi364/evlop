@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "evlop": {
+      "command": "python",
+      "args": [
+        ".evlop/evlop_runner.py",
+        "mcp"
+      ]
+    }
+  }
+}

@@ -12,6 +12,7 @@ import sys
 from evlop.bootstrap import bootstrap_workspace
 from evlop.compiler import export_gene_to_skill, inject_markdown_file, render_lineage_mermaid
 from evlop.dag_rail import DagCycleError, execute_dag_rail
+from evlop.feynman import distill_feynman_gene, generate_feynman_blueprint
 from evlop.fitness import govern_genes
 from evlop.models import Episode, Gene, slugify_gene_id, utc_now_iso
 from evlop.quality_gate import audit_python_path
@@ -190,6 +191,18 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     p_rsi.add_argument("--out", default="", help="Optional path to write JSON Pareto report")
 
+    p_feynman = sub.add_parser(
+        "feynman",
+        help="[Feynman Mode] Deconstruct an unfamiliar task into First-Principles Invariants & Counter-Examples",
+    )
+    p_feynman.add_argument("task", help="Task or problem description to deconstruct")
+    p_feynman.add_argument(
+        "--distill-gene",
+        action="store_true",
+        help="Also save the universal Feynman mental model into .evlop/genes.json",
+    )
+    p_feynman.add_argument("--json", action="store_true", help="Output blueprint as JSON")
+
     sub.add_parser("mcp", help="Run zero-dependency MCP JSON-RPC 2.0 server over stdio")
 
     return parser
@@ -227,6 +240,20 @@ def main(argv: list[str] | None = None, root_dir: Path | None = None) -> int:
         from evlop.mcp_server import run_stdio_server
 
         return run_stdio_server(workspace)
+
+    if args.subcommand == "feynman":
+        bp = generate_feynman_blueprint(args.task)
+        if args.distill_gene:
+            with store.lock():
+                genes = store.load_genes()
+                genes.append(distill_feynman_gene(bp, verified=True))
+                governed = govern_genes(genes, cfg)
+                store.save_genes(governed)
+        if args.json:
+            _safe_print(json.dumps(bp.to_dict(), indent=2, ensure_ascii=False))
+        else:
+            _safe_print(bp.to_markdown())
+        return 0
 
     if args.subcommand == "rsi":
         report = run_rsi_scaffold_evolution(

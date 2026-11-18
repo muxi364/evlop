@@ -1,0 +1,7 @@
+{
+  "max_active_genes": 15,
+  "promote_threshold": 1.15,
+  "prune_threshold": 0.35,
+  "half_life_days": 30.0,
+  "verify_ttl_minutes": 30.0
+}

@@ -1,0 +1,8 @@
+{
+  "command": "python -m unittest discover -s . -p test_all_three.py -v",
+  "exit_code": 0,
+  "passed": true,
+  "timestamp": "2026-11-18T05:29:52.062297+00:00",
+  "output_snippet": "test_feynman_expr_eval_counter_examples (test_all_three.TestAllThree.test_feynman_expr_eval_counter_examples) ... ok\ntest_feynman_hash_ring_counter_examples (test_all_three.TestAllThree.test_feynman_hash_ring_counter_examples) ... ok\ntest_feynman_stream_codec_counter_examples (test_all_three.TestAllThree.test_feynman_stream_codec_counter_examples) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.001s\n\nOK",
+  "duration_ms": 644.83
+}
