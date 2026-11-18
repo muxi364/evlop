@@ -124,6 +124,18 @@ class TestHomeRailHeterogeneousDag(unittest.TestCase):
             rc_cycle = main(["dag", "run", str(bad_path)], root_dir=root)
             self.assertNotEqual(rc_cycle, 0)
 
+    def test_sota_benchmark_suite_achieves_100_percent(self):
+        repo_root = Path(__file__).resolve().parent.parent
+        sys.path.insert(0, str(repo_root))
+        from benchmarks.evaluate_evlop_sota import run_all_benchmarks
+
+        report = run_all_benchmarks()
+        self.assertEqual(report["retrieval"]["recall_at_1_pct"], 100.0)
+        self.assertEqual(report["retrieval"]["mrr_pct"], 100.0)
+        self.assertEqual(report["dag_resilience"]["dag_resilience_score_pct"], 100.0)
+        self.assertEqual(report["lineage_efficiency"]["lineage_efficiency_pct"], 100.0)
+        self.assertEqual(report["composite_sota_score_pct"], 100.0)
+
 
 if __name__ == "__main__":
     unittest.main()

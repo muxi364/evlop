@@ -5,6 +5,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from datetime import datetime, timezone
 import json
+import math
 import os
 from pathlib import Path
 import threading
@@ -180,8 +181,8 @@ class EvlopStore:
         )
 
     def recall_genes(self, query: str, top_k: int = 5) -> list[Gene]:
-        """Search active (non-archived) genes by keyword overlap + Darwinian fitness."""
-        active = [g for g in self.load_genes() if g.status != "archived"]
+        """Search active (non-archived, non-superseded) genes by BM25-style Corpus IDF, field weighting, and fitness."""
+        active = [g for g in self.load_genes() if g.status not in ("archived", "superseded")]
         if not active:
             return []
 
@@ -191,13 +192,44 @@ class EvlopStore:
             return active[:top_k]
 
         q_tokens = tokenize(q_clean)
-        scored: list[tuple[float, Gene]] = []
+        n_docs = len(active)
+
+        gene_fields: list[tuple[Gene, set[str], set[str], set[str], set[str]]] = []
+        df_counts: dict[str, int] = {t: 0 for t in q_tokens}
+
         for g in active:
-            doc_tokens = tokenize(f"{g.id} {g.title} {g.category} {g.trigger} {g.strategy}")
-            overlap = len(q_tokens & doc_tokens)
-            if overlap > 0 or q_clean.lower() in f"{g.title} {g.trigger} {g.strategy}".lower():
-                effective_overlap = max(1, overlap)
-                score = (effective_overlap * 2.0) + g.fitness
+            high_tokens = tokenize(f"{g.id} {g.title} {g.trigger}")
+            med_tokens = tokenize(f"{g.category} {g.strategy}")
+            anti_tokens = tokenize(g.anti_pattern)
+            all_doc_tokens = high_tokens | med_tokens | anti_tokens
+            gene_fields.append((g, high_tokens, med_tokens, anti_tokens, all_doc_tokens))
+            for t in q_tokens:
+                if t in all_doc_tokens:
+                    df_counts[t] += 1
+
+        idf: dict[str, float] = {
+            t: math.log(1.0 + (max(0.0, n_docs - df) + 0.5) / (df + 0.5))
+            for t, df in df_counts.items()
+        }
+
+        scored: list[tuple[float, Gene]] = []
+        q_lower = q_clean.lower()
+        for g, high_tokens, med_tokens, anti_tokens, all_doc_tokens in gene_fields:
+            matched_tokens = q_tokens & all_doc_tokens
+            lexical_score = 0.0
+            for t in matched_tokens:
+                field_w = 0.0
+                if t in high_tokens:
+                    field_w += 3.0
+                if t in med_tokens:
+                    field_w += 1.5
+                if t not in high_tokens and t not in med_tokens and t in anti_tokens:
+                    field_w += 1.0
+                lexical_score += idf[t] * field_w
+
+            if lexical_score > 0.0 or q_lower in f"{g.title} {g.trigger} {g.strategy}".lower():
+                effective_lexical = max(1.0, lexical_score)
+                score = (effective_lexical * 2.0) + g.fitness
                 scored.append((score, g))
 
         scored.sort(key=lambda pair: pair[0], reverse=True)

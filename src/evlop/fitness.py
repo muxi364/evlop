@@ -8,12 +8,34 @@ import re
 
 from evlop.models import EvlopConfig, Gene
 
-_TOKEN_RE = re.compile(r"[a-z0-9_\-]+|[\u4e00-\u9fff]")
+_WORD_RE = re.compile(r"[a-z0-9_\-]+")
+_CJK_RUN_RE = re.compile(r"[\u4e00-\u9fff]+")
+
+_STOPWORDS: frozenset[str] = frozenset({
+    "a", "an", "and", "are", "as", "at", "be", "by", "for", "from",
+    "in", "into", "is", "it", "of", "on", "or", "that", "the", "to",
+    "was", "when", "will", "with",
+    "python", "error", "test", "file", "line", "module", "function",
+    "code", "project", "general", "generic", "handler", "check", "py",
+    "的", "了", "在", "中", "和", "与", "或", "及", "等", "把", "被", "行",
+    "代", "码", "文", "件", "错", "误", "出", "现", "问", "题", "测", "试", "导", "致",
+    "代码", "错误", "文件", "出现", "问题", "测试", "导致", "中出", "现错", "误文", "件行",
+})
 
 
-def tokenize(text: str) -> set[str]:
-    """Extract normalized alphanumeric words and individual CJK character tokens."""
-    return set(_TOKEN_RE.findall(text.lower()))
+def tokenize(text: str, filter_stopwords: bool = True) -> set[str]:
+    """Extract normalized alphanumeric words, CJK unigrams, and CJK character bigrams with stop-word filtering."""
+    lowered = text.lower()
+    raw_tokens: set[str] = set(_WORD_RE.findall(lowered))
+    for run in _CJK_RUN_RE.findall(lowered):
+        for ch in run:
+            raw_tokens.add(ch)
+        for i in range(len(run) - 1):
+            raw_tokens.add(run[i : i + 2])
+    if not filter_stopwords:
+        return raw_tokens
+    filtered = {t for t in raw_tokens if t not in _STOPWORDS}
+    return filtered if filtered else raw_tokens
 
 
 def jaccard_similarity(text_a: str, text_b: str) -> float:
@@ -106,6 +128,23 @@ def _merge_two_genes(primary: Gene, duplicate: Gene) -> Gene:
     )
 
 
+def _lineage_chain(gene_id: str, parent_map: dict[str, str]) -> set[str]:
+    """Return `gene_id` and all its transitive ancestor IDs (cycle-safe)."""
+    chain: set[str] = set()
+    curr = gene_id
+    while curr and curr not in chain:
+        chain.add(curr)
+        curr = parent_map.get(curr, "")
+    return chain
+
+
+def _same_lineage_family(gene_a: Gene, gene_b: Gene, parent_map: dict[str, str]) -> bool:
+    """Return True if `gene_a` and `gene_b` share any common ancestor or ancestor-descendant link."""
+    if not gene_a.parent_id and not gene_b.parent_id:
+        return False
+    return bool(_lineage_chain(gene_a.id, parent_map) & _lineage_chain(gene_b.id, parent_map))
+
+
 def govern_genes(
     genes: list[Gene],
     config: EvlopConfig,
@@ -113,9 +152,11 @@ def govern_genes(
     similarity_threshold: float = 0.65,
 ) -> list[Gene]:
     """
-    Deduplicate near-identical genes (while preserving explicit parent-child DGM mutations),
-    recalculate Darwinian fitness scores, update status, and sort by fitness descending.
+    Deduplicate near-identical genes (while preserving transitive DGM lineage families),
+    recalculate Darwinian fitness scores, supersede older ancestors when a fitter descendant
+    is promoted, and sort by fitness descending.
     """
+    parent_map: dict[str, str] = {g.id: g.parent_id for g in genes if g.id and g.parent_id}
     merged: list[Gene] = []
     for incoming in genes:
         sig_incoming = f"{incoming.title} {incoming.trigger}"
@@ -124,8 +165,8 @@ def govern_genes(
             if existing.id == incoming.id:
                 matched_idx = idx
                 break
-            # DGM Lineage Rule: explicit parent-child mutations coexist in the phylogenetic archive
-            if incoming.parent_id == existing.id or existing.parent_id == incoming.id:
+            # DGM Lineage Rule: all transitive ancestor/descendant/sibling mutations coexist in the archive
+            if _same_lineage_family(incoming, existing, parent_map):
                 continue
             sig_existing = f"{existing.title} {existing.trigger}"
             if jaccard_similarity(sig_incoming, sig_existing) >= similarity_threshold:
@@ -148,6 +189,23 @@ def govern_genes(
             g.status = "promoted"
         else:
             g.status = "candidate"
+
+    # DGM Ancestor Superseding Pass: when a descendant is promoted with >= fitness, supersede older ancestors
+    by_id: dict[str, Gene] = {g.id: g for g in merged}
+    for g in merged:
+        if g.status != "promoted" or not g.parent_id:
+            continue
+        visited: set[str] = {g.id}
+        curr_parent_id = g.parent_id
+        while curr_parent_id and curr_parent_id not in visited:
+            visited.add(curr_parent_id)
+            ancestor = by_id.get(curr_parent_id)
+            if ancestor is not None:
+                if ancestor.status != "archived" and g.fitness >= ancestor.fitness:
+                    ancestor.status = "superseded"
+                curr_parent_id = ancestor.parent_id
+            else:
+                curr_parent_id = parent_map.get(curr_parent_id, "")
 
     merged.sort(key=lambda item: (item.status == "promoted", item.fitness, item.success_count), reverse=True)
     return merged
