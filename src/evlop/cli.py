@@ -1,4 +1,4 @@
-"""CLI entrypoint for EVLOP: init, recall, verify, log, mutate, lineage, evolve, export-skill, status, mcp."""
+"""CLI entrypoint for EVLOP v3.0: init, recall, verify, log, mutate, lineage, evolve, export-skill, dag, scorecard, replay, status, mcp."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ import sys
 
 from evlop.bootstrap import bootstrap_workspace
 from evlop.compiler import export_gene_to_skill, inject_markdown_file, render_lineage_mermaid
+from evlop.dag_rail import DagCycleError, execute_dag_rail
 from evlop.fitness import govern_genes
 from evlop.models import Episode, Gene, slugify_gene_id, utc_now_iso
 from evlop.store import EvlopStore
@@ -31,7 +32,7 @@ def _safe_print(text: str, file=None) -> None:
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="evlop",
-        description="EVLOP v2.0: Self-Evolving Agent Framework & DGM/AlphaEvolve Lineage Engine",
+        description="EVLOP v3.0: Heterogeneous Multi-Agent DAG Rail & Darwinian Self-Evolution Engine",
     )
     sub = parser.add_subparsers(dest="subcommand", required=True)
 
@@ -119,6 +120,29 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Also synthesize an executable Python tool script under scripts/run_strategy.py",
     )
 
+    # HomeRail Heterogeneous Multi-Agent DAG Rail Commands
+    p_dag = sub.add_parser(
+        "dag",
+        help="[HomeRail Mode] Run or supervise a heterogeneous multi-agent DAG workflow in parallel waves",
+    )
+    p_dag.add_argument("action", choices=["run", "supervise"], help="DAG action")
+    p_dag.add_argument("spec", help="Path to DAG specification JSON file")
+    p_dag.add_argument("--run-id", default="", help="Optional explicit run identifier")
+
+    p_scorecard = sub.add_parser(
+        "scorecard",
+        help="[HomeRail Mode] Inspect evaluation scorecard for a completed DAG run",
+    )
+    p_scorecard.add_argument("run_id", help="DAG run ID")
+    p_scorecard.add_argument("--json", action="store_true", help="Output scorecard as JSON")
+
+    p_replay = sub.add_parser(
+        "replay",
+        help="[HomeRail Mode] Replay or audit a previous DAG run (optionally starting from a specific node)",
+    )
+    p_replay.add_argument("run_id", help="DAG run ID to replay")
+    p_replay.add_argument("--from-node", default="", help="Node ID to resume execution from")
+
     p_status = sub.add_parser("status", help="Inspect EVLOP genome health, swarm contributors, and lineage depth")
     p_status.add_argument("--json", action="store_true", help="Output status as JSON")
 
@@ -159,6 +183,64 @@ def main(argv: list[str] | None = None, root_dir: Path | None = None) -> int:
         from evlop.mcp_server import run_stdio_server
 
         return run_stdio_server(workspace)
+
+    if args.subcommand == "dag":
+        spec_path = Path(args.spec)
+        if not spec_path.is_absolute():
+            spec_path = (workspace / spec_path).resolve()
+        try:
+            record = execute_dag_rail(spec_path, workspace=workspace, store=store, run_id=args.run_id)
+        except (DagCycleError, FileNotFoundError, json.JSONDecodeError, KeyError) as exc:
+            _safe_print(f"[EVLOP DAG Error] {exc}", file=sys.stderr)
+            return 1
+
+        sc = record.scorecard
+        _safe_print(
+            f"[EVLOP DAG {record.status.upper()}] Run: {record.run_id} | Rail: {record.rail_id} | "
+            f"Waves: {len(record.waves)} | Score: {sc['overall_score']}% | "
+            f"Speedup: {sc['parallel_speedup_factor']}x | Agents: {', '.join(sc['heterogeneous_agents'])}"
+        )
+        return 0 if record.status == "passed" else 1
+
+    if args.subcommand == "scorecard":
+        run_file = store.evlop_dir / "runs" / f"{args.run_id}.json"
+        if not run_file.exists():
+            _safe_print(f"[EVLOP Error] Run '{args.run_id}' not found.", file=sys.stderr)
+            return 1
+        data = json.loads(run_file.read_text(encoding="utf-8"))
+        sc = data.get("scorecard", {})
+        if args.json:
+            _safe_print(json.dumps(sc, indent=2, ensure_ascii=False))
+        else:
+            _safe_print(
+                f"[EVLOP Scorecard] Run: {args.run_id} ({data.get('rail_id')})\n"
+                f"  Overall Score : {sc.get('overall_score')}% ({sc.get('passed_nodes')}/{sc.get('total_nodes')} nodes passed)\n"
+                f"  Speedup Factor: {sc.get('parallel_speedup_factor')}x (Wall: {sc.get('wall_clock_ms')}ms)\n"
+                f"  Agent Mix     : {', '.join(sc.get('heterogeneous_agents', []))}\n"
+                f"  Genes Recalled: {sc.get('total_genes_recalled', 0)}"
+            )
+        return 0
+
+    if args.subcommand == "replay":
+        run_file = store.evlop_dir / "runs" / f"{args.run_id}.json"
+        if not run_file.exists():
+            _safe_print(f"[EVLOP Error] Run '{args.run_id}' not found.", file=sys.stderr)
+            return 1
+        prior_data = json.loads(run_file.read_text(encoding="utf-8"))
+        spec_path = Path(prior_data["spec_path"])
+        record = execute_dag_rail(
+            spec_path,
+            workspace=workspace,
+            store=store,
+            run_id=f"{args.run_id}-replay",
+            start_from_node=args.from_node,
+            prior_results=prior_data.get("node_results", {}),
+        )
+        _safe_print(
+            f"[EVLOP Replay {record.status.upper()}] Replayed '{args.run_id}' -> '{record.run_id}' "
+            f"(Score: {record.scorecard['overall_score']}%)"
+        )
+        return 0 if record.status == "passed" else 1
 
     if args.subcommand == "recall":
         matches = store.recall_genes(args.query, top_k=args.top)

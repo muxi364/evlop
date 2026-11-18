@@ -52,7 +52,12 @@
 - **[coleam00/claude-memory-compiler](https://github.com/coleam00/claude-memory-compiler)**：受 Andrej Karpathy 的 LLM Knowledge Base 启发，将会话日志自动编译为结构化知识库。
 - **[mickeyyaya/evolve-loop](https://github.com/mickeyyaya/evolve-loop)** & **[evanklem/evanflow](https://github.com/evanklem/evanflow)**：引入确定性测试门禁与 TDD 迭代闭环，防止 AI 编写未经验证的代码。
 
-### 3. 自进化智能体论文合集仓库（Awesome Lists）
+### 3. 异构多智能体混合并发与 DAG 轨道编排（Heterogeneous Multi-Agent Concurrency & DAG Rails）
+- **[xiaotianfotos/homerail](https://github.com/xiaotianfotos/homerail)**（**HomeRail**）：极具代表性的本地多智能体编排运行时。它摒弃了传统不可控的“多智能体聊天黑箱”，将多智能体协同转化为**显式有向无环图（DAG Rail）轨道**，通过拓扑波次并发调度异构智能体（如 Claude Code、Codex 等驱动 `hr dag`）、内置运行评估计分卡（`hr scorecard` / `hr eval-run`）与确定性回放（`hr replay`）。这一设计直接启发了 **EVLOP v3.0** 的 `evlop dag` / `evlop scorecard` / `evlop replay` 异构并发引擎。
+- **[affaan-m/claude-swarm](https://github.com/affaan-m/claude-swarm)** & **[nwiizo/ccswarm](https://github.com/nwiizo/ccswarm)**：面向 Claude Code 与 Codex 混合集群的依赖图分解、Git Worktree 沙盒隔离与冲突检测框架。
+- **[fcarucci/Swarm](https://github.com/fcarucci/Swarm)** & **[aumiqx/colony](https://github.com/aumiqx/colony)**：基于共享消息板（Message Board）与守护队列的多智能体异步协作与评审集群。
+
+### 4. 自进化智能体论文合集仓库（Awesome Lists）
 - **[CharlesQ9/Self-Evolving-Agents](https://github.com/CharlesQ9/Self-Evolving-Agents)**（TMLR 2026 综述官方仓库）
 - **[XMUDeepLIT/Awesome-Self-Evolving-Agents](https://github.com/XMUDeepLIT/Awesome-Self-Evolving-Agents)**
 - **[ANative-Lab/Awesome-Self-Evolving-Agents](https://github.com/ANative-Lab/Awesome-Self-Evolving-Agents)**

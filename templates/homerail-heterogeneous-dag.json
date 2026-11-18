@@ -1,0 +1,38 @@
+{
+  "rail_id": "homerail-heterogeneous-ci-rail",
+  "description": "HomeRail-inspired heterogeneous multi-agent concurrent DAG workflow (Planner -> Parallel [Coder + Auditor] -> Deterministic Verifier)",
+  "nodes": [
+    {
+      "id": "arch_planner",
+      "role": "Architecture & Spec Planner",
+      "agent_type": "claude-code",
+      "depends_on": [],
+      "recall_query": "Subagent Context Isolation",
+      "command": "python -c \"import os, json; genes=json.loads(os.environ.get('EVLOP_RECALLED_GENES_JSON','[]')); print(f'[claude-code:arch_planner] Planned with {len(genes)} recalled gene(s)')\""
+    },
+    {
+      "id": "impl_coder",
+      "role": "Feature & Patch Implementer",
+      "agent_type": "codex",
+      "depends_on": ["arch_planner"],
+      "recall_query": "UTF-8 Encoding File I/O",
+      "command": "python -c \"import os, json; genes=json.loads(os.environ.get('EVLOP_RECALLED_GENES_JSON','[]')); print(f'[codex:impl_coder] Implemented patch using {len(genes)} recalled gene(s)')\""
+    },
+    {
+      "id": "security_auditor",
+      "role": "Boundary & Security Reviewer",
+      "agent_type": "gemini",
+      "depends_on": ["arch_planner"],
+      "recall_query": "Execution-Verified Patching Gate",
+      "command": "python -c \"import os, json; genes=json.loads(os.environ.get('EVLOP_RECALLED_GENES_JSON','[]')); print(f'[gemini:security_auditor] Audited boundaries with {len(genes)} recalled gene(s)')\""
+    },
+    {
+      "id": "deterministic_gate",
+      "role": "EVLOP Verification & Scorecard Gate",
+      "agent_type": "evlop-verifier",
+      "depends_on": ["impl_coder", "security_auditor"],
+      "recall_query": "Verification Gate",
+      "command": "python -m unittest discover -s tests -p test_core.py -v"
+    }
+  ]
+}

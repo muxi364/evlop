@@ -109,6 +109,11 @@ python -m evlop mutate \
   --agent-id "architect-agent-1"
 
 python -m evlop lineage --mermaid --out docs/LINEAGE.md
+
+# Step 7 [HomeRail Mode - 异构多智能体 DAG 拓扑波次并发、Scorecard 计分卡与 Replay 回放]:
+python -m evlop dag run templates/homerail-heterogeneous-dag.json --run-id demo-rail-001
+python -m evlop scorecard demo-rail-001
+python -m evlop replay demo-rail-001 --from-node deterministic_gate
 ```
 
 ### 3. 让任何其他 Agent 一键零依赖接入 EVLOP（工程级全自动引导）

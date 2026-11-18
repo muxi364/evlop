@@ -1,0 +1,96 @@
+{
+  "run_id": "demo-rail-001",
+  "rail_id": "homerail-heterogeneous-ci-rail",
+  "description": "HomeRail-inspired heterogeneous multi-agent concurrent DAG workflow (Planner -> Parallel [Coder + Auditor] -> Deterministic Verifier)",
+  "spec_path": "C:\\Users\\lenovo\\.gemini\\antigravity\\scratch\\evlop\\templates\\homerail-heterogeneous-dag.json",
+  "started_at": "2026-11-18T00:24:41.013822+00:00",
+  "completed_at": "2026-11-18T00:24:42.226792+00:00",
+  "status": "passed",
+  "wall_clock_ms": 1212.56,
+  "waves": [
+    [
+      "arch_planner"
+    ],
+    [
+      "impl_coder",
+      "security_auditor"
+    ],
+    [
+      "deterministic_gate"
+    ]
+  ],
+  "node_results": {
+    "arch_planner": {
+      "node_id": "arch_planner",
+      "role": "Architecture & Spec Planner",
+      "agent_type": "claude-code",
+      "wave_index": 0,
+      "status": "passed",
+      "exit_code": 0,
+      "duration_ms": 251.48,
+      "recalled_gene_ids": [
+        "gene-subagent-context-isolation-for-deep-explor"
+      ],
+      "output_snippet": "[claude-code:arch_planner] Planned with 1 recalled gene(s)"
+    },
+    "impl_coder": {
+      "node_id": "impl_coder",
+      "role": "Feature & Patch Implementer",
+      "agent_type": "codex",
+      "wave_index": 1,
+      "status": "passed",
+      "exit_code": 0,
+      "duration_ms": 248.11,
+      "recalled_gene_ids": [
+        "gene-explicit-utf-8-encoding-on-cross-platform"
+      ],
+      "output_snippet": "[codex:impl_coder] Implemented patch using 1 recalled gene(s)"
+    },
+    "security_auditor": {
+      "node_id": "security_auditor",
+      "role": "Boundary & Security Reviewer",
+      "agent_type": "gemini",
+      "wave_index": 1,
+      "status": "passed",
+      "exit_code": 0,
+      "duration_ms": 244.22,
+      "recalled_gene_ids": [
+        "gene-execution-verified-patching-gate",
+        "gene-latency-profiled-execution-verification-ga"
+      ],
+      "output_snippet": "[gemini:security_auditor] Audited boundaries with 2 recalled gene(s)"
+    },
+    "deterministic_gate": {
+      "node_id": "deterministic_gate",
+      "role": "EVLOP Verification & Scorecard Gate",
+      "agent_type": "evlop-verifier",
+      "wave_index": 2,
+      "status": "passed",
+      "exit_code": 0,
+      "duration_ms": 678.75,
+      "recalled_gene_ids": [
+        "gene-latency-profiled-execution-verification-ga",
+        "gene-execution-verified-patching-gate"
+      ],
+      "output_snippet": "test_duplicate_gene_merge_english_and_cjk (test_core.TestEvlopCore.test_duplicate_gene_merge_english_and_cjk) ... ok\ntest_fitness_formula_and_unverified_gate (test_core.TestEvlopCore.test_fitness_formula_and_unverified_gate) ... ok\ntest_future_and_malformed_timestamps_clamped_and_decay_works (test_core.TestEvlopCore.test_future_and_malformed_timestamps_clamped_and_decay_works) ... ok\ntest_store_roundtrip_and_cjk_recall (test_core.TestEvlopCore.test_store_roundtrip_and_cjk_recall) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.058s\n\nOK"
+    }
+  },
+  "scorecard": {
+    "total_nodes": 4,
+    "passed_nodes": 4,
+    "failed_nodes": 0,
+    "skipped_nodes": 0,
+    "pass_rate": 1.0,
+    "overall_score": 100.0,
+    "sum_node_duration_ms": 1422.56,
+    "wall_clock_ms": 1212.56,
+    "parallel_speedup_factor": 1.17,
+    "heterogeneous_agents": [
+      "claude-code",
+      "codex",
+      "evlop-verifier",
+      "gemini"
+    ],
+    "total_genes_recalled": 6
+  }
+}

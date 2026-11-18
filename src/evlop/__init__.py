@@ -1,3 +1,3 @@
-"""EVLOP v2.0: Universal Self-Evolving Agent Framework, Darwinian Memory & DGM/AlphaEvolve Lineage Engine."""
+"""EVLOP v3.0: Heterogeneous Multi-Agent DAG Rail (HomeRail Mode) + Darwinian Self-Evolution Engine."""
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
