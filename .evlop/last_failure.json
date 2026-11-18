@@ -1,0 +1,8 @@
+{
+  "command": "python -m unittest discover -s tests -p test_homerail_dag.py -v",
+  "exit_code": 1,
+  "timestamp": "2026-11-18T00:56:57.856167+00:00",
+  "error_type": "AssertionError",
+  "symptom_summary": "AssertionError: 60.0 != 100.0",
+  "output_snippet": "_homerail_dag.TestHomeRailHeterogeneousDag.test_dag_cycle_detection_and_failed_node_auto_gene_logging) ... [EVLOP DAG Error] Cycle detected in DAG specification.\nok\ntest_dag_topological_wave_concurrency_scorecard_and_replay (test_homerail_dag.TestHomeRailHeterogeneousDag.test_dag_topological_wave_concurrency_scorecard_and_replay) ... ok\ntest_sota_benchmark_suite_achieves_100_percent (test_homerail_dag.TestHomeRailHeterogeneousDag.test_sota_benchmark_suite_achieves_100_percent) ... FAIL\n\n======================================================================\nFAIL: test_sota_benchmark_suite_achieves_100_percent (test_homerail_dag.TestHomeRailHeterogeneousDag.test_sota_benchmark_suite_achieves_100_percent)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\lenovo\\.gemini\\antigravity\\scratch\\evlop\\tests\\test_homerail_dag.py\", line 137, in test_sota_benchmark_suite_achieves_100_percent\n    self.assertEqual(report[\"scale_and_pareto_efficiency\"][\"efficiency_score_pct\"], 100.0)\nAssertionError: 60.0 != 100.0\n\n----------------------------------------------------------------------\nRan 3 tests in 2.919s\n\nFAILED (failures=1)"
+}

@@ -1,8 +1,9 @@
-"""Workspace persistence store (.evlop/) with cross-process/thread locking, TTL validation, and recall."""
+"""Workspace persistence store (.evlop/) with cross-process locking, TTL check, and Mtime-Cached Inverted Index."""
 
 from __future__ import annotations
 
 from contextlib import contextmanager
+from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
 import math
@@ -17,6 +18,64 @@ from evlop.fitness import tokenize
 from evlop.models import Episode, EvlopConfig, FailureDiagnosis, Gene, VerifyRecord
 
 _IN_PROCESS_LOCK = threading.RLock()
+
+
+@dataclass
+class _CompiledSearchIndex:
+    active_genes: list[Gene]
+    sorted_by_fitness: list[Gene]
+    postings: dict[str, list[tuple[int, float]]]
+    concat_lower: list[str]
+
+
+_SEARCH_INDEX_CACHE: dict[Path, tuple[int, int, _CompiledSearchIndex]] = {}
+
+
+def _build_compiled_index(genes: list[Gene]) -> _CompiledSearchIndex:
+    active = [g for g in genes if g.status not in ("archived", "superseded")]
+    sorted_by_fitness = sorted(active, key=lambda g: g.fitness, reverse=True)
+    n_docs = len(active)
+    if not active:
+        return _CompiledSearchIndex([], [], {}, [])
+
+    doc_token_weights: list[dict[str, float]] = []
+    df_counts: dict[str, int] = {}
+    concat_lower: list[str] = []
+
+    for g in active:
+        high_tokens = tokenize(f"{g.id} {g.title} {g.trigger}")
+        med_tokens = tokenize(f"{g.category} {g.strategy}")
+        anti_tokens = tokenize(g.anti_pattern)
+        all_tokens = high_tokens | med_tokens | anti_tokens
+
+        weights: dict[str, float] = {}
+        for t in all_tokens:
+            w = 0.0
+            if t in high_tokens:
+                w += 3.0
+            if t in med_tokens:
+                w += 1.5
+            if t not in high_tokens and t not in med_tokens and t in anti_tokens:
+                w += 1.0
+            weights[t] = w
+            df_counts[t] = df_counts.get(t, 0) + 1
+
+        doc_token_weights.append(weights)
+        concat_lower.append(f"{g.title} {g.trigger} {g.strategy}".lower())
+
+    postings: dict[str, list[tuple[int, float]]] = {}
+    for doc_idx, weights in enumerate(doc_token_weights):
+        for t, field_w in weights.items():
+            df = df_counts[t]
+            idf = math.log(1.0 + (max(0.0, n_docs - df) + 0.5) / (df + 0.5))
+            postings.setdefault(t, []).append((doc_idx, idf * field_w))
+
+    return _CompiledSearchIndex(
+        active_genes=active,
+        sorted_by_fitness=sorted_by_fitness,
+        postings=postings,
+        concat_lower=concat_lower,
+    )
 
 
 def _atomic_write_text(target: Path, content: str) -> None:
@@ -66,7 +125,6 @@ class EvlopStore:
                     fd = os.open(str(self.lock_file), os.O_CREAT | os.O_EXCL | os.O_RDWR)
                     break
                 except FileExistsError:
-                    # Break stale lock if older than 30 seconds
                     try:
                         if time.time() - self.lock_file.stat().st_mtime > 30.0:
                             self.lock_file.unlink()
@@ -179,58 +237,61 @@ class EvlopStore:
             self.genes_file,
             json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
         )
+        try:
+            st = self.genes_file.stat()
+            _SEARCH_INDEX_CACHE[self.genes_file] = (
+                st.st_mtime_ns,
+                st.st_size,
+                _build_compiled_index(genes),
+            )
+        except OSError:
+            pass
+
+    def _get_search_index(self) -> _CompiledSearchIndex:
+        if not self.genes_file.exists():
+            return _CompiledSearchIndex([], [], {}, [])
+        try:
+            st = self.genes_file.stat()
+            cached = _SEARCH_INDEX_CACHE.get(self.genes_file)
+            if cached and cached[0] == st.st_mtime_ns and cached[1] == st.st_size:
+                return cached[2]
+            genes = self.load_genes()
+            compiled = _build_compiled_index(genes)
+            _SEARCH_INDEX_CACHE[self.genes_file] = (st.st_mtime_ns, st.st_size, compiled)
+            return compiled
+        except OSError:
+            return _build_compiled_index(self.load_genes())
 
     def recall_genes(self, query: str, top_k: int = 5) -> list[Gene]:
-        """Search active (non-archived, non-superseded) genes by BM25-style Corpus IDF, field weighting, and fitness."""
-        active = [g for g in self.load_genes() if g.status not in ("archived", "superseded")]
-        if not active:
+        """Search active genes in sub-millisecond time using Mtime-Cached Weighted Inverted Index."""
+        idx = self._get_search_index()
+        if not idx.active_genes:
             return []
 
         q_clean = query.strip()
         if not q_clean or q_clean == "*":
-            active.sort(key=lambda g: g.fitness, reverse=True)
-            return active[:top_k]
+            return idx.sorted_by_fitness[:top_k]
 
         q_tokens = tokenize(q_clean)
-        n_docs = len(active)
+        lexical_scores: dict[int, float] = {}
+        for t in q_tokens:
+            for doc_idx, weight in idx.postings.get(t, ()):
+                lexical_scores[doc_idx] = lexical_scores.get(doc_idx, 0.0) + weight
 
-        gene_fields: list[tuple[Gene, set[str], set[str], set[str], set[str]]] = []
-        df_counts: dict[str, int] = {t: 0 for t in q_tokens}
+        q_lower = q_clean.lower()
+        if not lexical_scores:
+            for doc_idx, text_lower in enumerate(idx.concat_lower):
+                if q_lower in text_lower:
+                    lexical_scores[doc_idx] = 1.0
 
-        for g in active:
-            high_tokens = tokenize(f"{g.id} {g.title} {g.trigger}")
-            med_tokens = tokenize(f"{g.category} {g.strategy}")
-            anti_tokens = tokenize(g.anti_pattern)
-            all_doc_tokens = high_tokens | med_tokens | anti_tokens
-            gene_fields.append((g, high_tokens, med_tokens, anti_tokens, all_doc_tokens))
-            for t in q_tokens:
-                if t in all_doc_tokens:
-                    df_counts[t] += 1
-
-        idf: dict[str, float] = {
-            t: math.log(1.0 + (max(0.0, n_docs - df) + 0.5) / (df + 0.5))
-            for t, df in df_counts.items()
-        }
+        if not lexical_scores:
+            return []
 
         scored: list[tuple[float, Gene]] = []
-        q_lower = q_clean.lower()
-        for g, high_tokens, med_tokens, anti_tokens, all_doc_tokens in gene_fields:
-            matched_tokens = q_tokens & all_doc_tokens
-            lexical_score = 0.0
-            for t in matched_tokens:
-                field_w = 0.0
-                if t in high_tokens:
-                    field_w += 3.0
-                if t in med_tokens:
-                    field_w += 1.5
-                if t not in high_tokens and t not in med_tokens and t in anti_tokens:
-                    field_w += 1.0
-                lexical_score += idf[t] * field_w
-
-            if lexical_score > 0.0 or q_lower in f"{g.title} {g.trigger} {g.strategy}".lower():
-                effective_lexical = max(1.0, lexical_score)
-                score = (effective_lexical * 2.0) + g.fitness
-                scored.append((score, g))
+        for doc_idx, lex in lexical_scores.items():
+            g = idx.active_genes[doc_idx]
+            score = (max(1.0, lex) * 2.0) + g.fitness
+            scored.append((score, g))
 
         scored.sort(key=lambda pair: pair[0], reverse=True)
         return [g for _, g in scored[:top_k]]

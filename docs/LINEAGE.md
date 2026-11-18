@@ -6,8 +6,10 @@ flowchart TD
     gene-self-healing-dag-node-retry-with-critical["gene-self-healing-dag-node-retry-with-critical<br/>Gen 3: Self-Healing DAG Node Retry with Critical Path Scorecard<br/>Fitness: 1.35 (promoted)"]
     gene-subagent-context-isolation-for-deep-explor["gene-subagent-context-isolation-for-deep-explor<br/>Gen 1: Subagent Context Isolation for Deep Exploration<br/>Fitness: 1.34 (promoted)"]
     gene-explicit-utf-8-encoding-on-cross-platform["gene-explicit-utf-8-encoding-on-cross-platform<br/>Gen 1: Explicit UTF-8 Encoding on Cross-Platform File I/O<br/>Fitness: 1.34 (promoted)"]
-    gene-latency-profiled-execution-verification-ga["gene-latency-profiled-execution-verification-ga<br/>Gen 2: Latency-Profiled Execution Verification Gate<br/>Fitness: 1.35 (superseded)"]
+    gene-latency-profiled-execution-verification-ga["gene-latency-profiled-execution-verification-ga<br/>Gen 2: Latency-Profiled Execution Verification Gate<br/>Fitness: 1.34 (superseded)"]
     gene-execution-verified-patching-gate["gene-execution-verified-patching-gate<br/>Gen 1: Execution-Verified Patching Gate<br/>Fitness: 1.34 (superseded)"]
+    gene-o-n-inverted-index-governance-and-sub-ms-m["gene-o-n-inverted-index-governance-and-sub-ms-m<br/>Gen 2: O(N) Inverted-Index Governance and Sub-ms Mtime-Cached Recall<br/>Fitness: 0.40 (candidate)"]
     gene-latency-profiled-execution-verification-ga -->|"Gen-3 HomeRail DAG resilience upgrad"| gene-self-healing-dag-node-retry-with-critical
     gene-execution-verified-patching-gate -->|"AlphaEvolve latency-aware verificati"| gene-latency-profiled-execution-verification-ga
+    gene-bm25-corpus-idf-cjk-bigrams-3x-field-weigh -->|"Gen-4 scale and Pareto efficiency op"| gene-o-n-inverted-index-governance-and-sub-ms-m
 ```

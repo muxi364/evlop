@@ -134,6 +134,7 @@ class TestHomeRailHeterogeneousDag(unittest.TestCase):
         self.assertEqual(report["retrieval"]["mrr_pct"], 100.0)
         self.assertEqual(report["dag_resilience"]["dag_resilience_score_pct"], 100.0)
         self.assertEqual(report["lineage_efficiency"]["lineage_efficiency_pct"], 100.0)
+        self.assertEqual(report["scale_and_pareto_efficiency"]["efficiency_score_pct"], 100.0)
         self.assertEqual(report["composite_sota_score_pct"], 100.0)
 
 

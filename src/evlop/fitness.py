@@ -1,4 +1,4 @@
-"""Darwinian fitness scoring, Jaccard deduplication/merge, and DGM lineage governance."""
+"""Darwinian fitness scoring, O(N) Inverted-Index Jaccard deduplication, and DGM lineage governance."""
 
 from __future__ import annotations
 
@@ -68,8 +68,8 @@ def _days_since(iso_ts: str, now: datetime) -> float:
 
 def compute_fitness(gene: Gene, config: EvlopConfig, now: datetime | None = None) -> float:
     """
-    Compute Darwinian Fitness Score for a Gene:
-    Fitness(g) = ((S + 1) / (S + F + 2)) * (1 + 0.5 * ln(1 + S)) * V_bonus * 2^(-delta_t / H)
+    Compute Darwinian Fitness Score for a Gene (with AlphaEvolve Pareto speed bonus when best_duration_ms > 0):
+    Fitness(g) = ((S + 1) / (S + F + 2)) * (1 + 0.5 * ln(1 + S)) * V_bonus * 2^(-delta_t / H) * E_speed
     """
     ref_now = now or datetime.now(timezone.utc)
     if ref_now.tzinfo is None:
@@ -86,11 +86,17 @@ def compute_fitness(gene: Gene, config: EvlopConfig, now: datetime | None = None
     half_life = max(1.0, config.half_life_days)
     decay = math.pow(2.0, -delta_days / half_life)
 
-    return round(smoothed_rate * volume_boost * v_bonus * decay, 4)
+    speed_bonus = (
+        1.0 + 0.05 / (1.0 + (gene.best_duration_ms / 1000.0))
+        if (gene.verified_gate and gene.best_duration_ms > 0.0)
+        else 1.0
+    )
+
+    return round(smoothed_rate * volume_boost * v_bonus * decay * speed_bonus, 4)
 
 
 def _merge_two_genes(primary: Gene, duplicate: Gene) -> Gene:
-    """Merge duplicate gene statistics and retain richer strategy text and combined swarm contributors."""
+    """Merge duplicate gene statistics and retain richer strategy text and minimum positive duration."""
     richer_strategy = (
         duplicate.strategy if len(duplicate.strategy) > len(primary.strategy) else primary.strategy
     )
@@ -106,6 +112,10 @@ def _merge_two_genes(primary: Gene, duplicate: Gene) -> Gene:
     )
     last_used_at = max(primary.last_used_at, duplicate.last_used_at)
     combined_contributors = sorted(set(primary.contributors) | set(duplicate.contributors))
+    if primary.best_duration_ms > 0.0 and duplicate.best_duration_ms > 0.0:
+        best_dur = min(primary.best_duration_ms, duplicate.best_duration_ms)
+    else:
+        best_dur = max(primary.best_duration_ms, duplicate.best_duration_ms)
 
     return Gene(
         id=primary.id,
@@ -125,6 +135,7 @@ def _merge_two_genes(primary: Gene, duplicate: Gene) -> Gene:
         generation=max(primary.generation, duplicate.generation),
         mutation_reason=primary.mutation_reason or duplicate.mutation_reason,
         contributors=combined_contributors,
+        best_duration_ms=best_dur,
     )
 
 
@@ -152,30 +163,56 @@ def govern_genes(
     similarity_threshold: float = 0.65,
 ) -> list[Gene]:
     """
-    Deduplicate near-identical genes (while preserving transitive DGM lineage families),
+    Deduplicate near-identical genes using an O(N) Inverted Index + Cardinality Filter,
     recalculate Darwinian fitness scores, supersede older ancestors when a fitter descendant
     is promoted, and sort by fitness descending.
     """
     parent_map: dict[str, str] = {g.id: g.parent_id for g in genes if g.id and g.parent_id}
     merged: list[Gene] = []
+    merged_tokens: list[set[str]] = []
+    id_to_idx: dict[str, int] = {}
+    inverted_idx: dict[str, list[int]] = {}
+
     for incoming in genes:
-        sig_incoming = f"{incoming.title} {incoming.trigger}"
+        in_tokens = tokenize(f"{incoming.title} {incoming.trigger}")
         matched_idx: int | None = None
-        for idx, existing in enumerate(merged):
-            if existing.id == incoming.id:
-                matched_idx = idx
-                break
-            # DGM Lineage Rule: all transitive ancestor/descendant/sibling mutations coexist in the archive
-            if _same_lineage_family(incoming, existing, parent_map):
-                continue
-            sig_existing = f"{existing.title} {existing.trigger}"
-            if jaccard_similarity(sig_incoming, sig_existing) >= similarity_threshold:
-                matched_idx = idx
-                break
+
+        if incoming.id in id_to_idx:
+            matched_idx = id_to_idx[incoming.id]
+        elif in_tokens:
+            len_in = len(in_tokens)
+            overlap_counts: dict[int, int] = {}
+            for tok in in_tokens:
+                for cand_idx in inverted_idx.get(tok, ()):
+                    overlap_counts[cand_idx] = overlap_counts.get(cand_idx, 0) + 1
+
+            for cand_idx in sorted(overlap_counts.keys()):
+                overlap = overlap_counts[cand_idx]
+                len_ex = len(merged_tokens[cand_idx])
+                union_len = len_in + len_ex - overlap
+                if union_len > 0 and (overlap / union_len) >= similarity_threshold:
+                    if _same_lineage_family(incoming, merged[cand_idx], parent_map):
+                        continue
+                    matched_idx = cand_idx
+                    break
+
         if matched_idx is not None:
+            prev_len = len(merged[matched_idx].trigger)
             merged[matched_idx] = _merge_two_genes(merged[matched_idx], incoming)
+            if len(merged[matched_idx].trigger) != prev_len:
+                new_toks = tokenize(f"{merged[matched_idx].title} {merged[matched_idx].trigger}")
+                added = new_toks - merged_tokens[matched_idx]
+                merged_tokens[matched_idx] = new_toks
+                for tok in added:
+                    inverted_idx.setdefault(tok, []).append(matched_idx)
         else:
+            new_idx = len(merged)
             merged.append(incoming)
+            merged_tokens.append(in_tokens)
+            if incoming.id:
+                id_to_idx[incoming.id] = new_idx
+            for tok in in_tokens:
+                inverted_idx.setdefault(tok, []).append(new_idx)
 
     for g in merged:
         g.fitness = compute_fitness(g, config, now=now)

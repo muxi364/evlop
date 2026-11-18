@@ -145,6 +145,7 @@ class Gene:
     generation: int = 1
     mutation_reason: str = ""
     contributors: list[str] = field(default_factory=list)
+    best_duration_ms: float = 0.0
 
     def __post_init__(self) -> None:
         now = utc_now_iso()
@@ -178,4 +179,5 @@ class Gene:
             generation=int(data.get("generation", 1)),
             mutation_reason=str(data.get("mutation_reason", "")),
             contributors=contributors,
+            best_duration_ms=float(data.get("best_duration_ms", 0.0)),
         )

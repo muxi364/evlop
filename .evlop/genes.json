@@ -12,13 +12,14 @@
     "created_at": "2026-11-18T00:45:22.173473+00:00",
     "last_used_at": "2026-11-18T00:45:22.173473+00:00",
     "status": "promoted",
-    "fitness": 1.3466,
+    "fitness": 1.3463,
     "parent_id": "",
     "generation": 1,
     "mutation_reason": "",
     "contributors": [
       "ir-specialist-agent"
-    ]
+    ],
+    "best_duration_ms": 0.0
   },
   {
     "id": "gene-self-healing-dag-node-retry-with-critical",
@@ -33,14 +34,15 @@
     "created_at": "2026-11-18T00:45:23.033725+00:00",
     "last_used_at": "2026-11-18T00:45:23.033725+00:00",
     "status": "promoted",
-    "fitness": 1.3466,
+    "fitness": 1.3463,
     "parent_id": "gene-latency-profiled-execution-verification-ga",
     "generation": 3,
     "mutation_reason": "Gen-3 HomeRail DAG resilience upgrade",
     "contributors": [
       "dag-resilience-agent",
       "evlop-v2-architect"
-    ]
+    ],
+    "best_duration_ms": 0.0
   },
   {
     "id": "gene-subagent-context-isolation-for-deep-explor",
@@ -55,11 +57,12 @@
     "created_at": "2026-11-17T23:09:31.410709+00:00",
     "last_used_at": "2026-11-17T23:09:31.410709+00:00",
     "status": "promoted",
-    "fitness": 1.3445,
+    "fitness": 1.3443,
     "parent_id": "",
     "generation": 1,
     "mutation_reason": "",
-    "contributors": []
+    "contributors": [],
+    "best_duration_ms": 0.0
   },
   {
     "id": "gene-explicit-utf-8-encoding-on-cross-platform",
@@ -74,11 +77,12 @@
     "created_at": "2026-11-17T23:09:32.069483+00:00",
     "last_used_at": "2026-11-17T23:09:32.069483+00:00",
     "status": "promoted",
-    "fitness": 1.3445,
+    "fitness": 1.3443,
     "parent_id": "",
     "generation": 1,
     "mutation_reason": "",
-    "contributors": []
+    "contributors": [],
+    "best_duration_ms": 0.0
   },
   {
     "id": "gene-latency-profiled-execution-verification-ga",
@@ -93,13 +97,14 @@
     "created_at": "2026-11-17T23:44:56.335604+00:00",
     "last_used_at": "2026-11-17T23:44:56.335604+00:00",
     "status": "superseded",
-    "fitness": 1.3453,
+    "fitness": 1.345,
     "parent_id": "gene-execution-verified-patching-gate",
     "generation": 2,
     "mutation_reason": "AlphaEvolve latency-aware verification",
     "contributors": [
       "evlop-v2-architect"
-    ]
+    ],
+    "best_duration_ms": 0.0
   },
   {
     "id": "gene-execution-verified-patching-gate",
@@ -114,10 +119,34 @@
     "created_at": "2026-11-17T23:09:30.719930+00:00",
     "last_used_at": "2026-11-17T23:09:30.719930+00:00",
     "status": "superseded",
-    "fitness": 1.3445,
+    "fitness": 1.3443,
     "parent_id": "",
     "generation": 1,
     "mutation_reason": "",
-    "contributors": []
+    "contributors": [],
+    "best_duration_ms": 0.0
+  },
+  {
+    "id": "gene-o-n-inverted-index-governance-and-sub-ms-m",
+    "title": "O(N) Inverted-Index Governance and Sub-ms Mtime-Cached Recall",
+    "category": "architecture",
+    "trigger": "Recall@1 dropped to 40% when high-fitness distractor genes contained common stop-words",
+    "strategy": "Use inverted index posting lists with cardinality pruning in govern_genes (39x speedup) and mtime-invalidated compiled search index in recall_genes (48x speedup)",
+    "anti_pattern": "Blindly guessing without verification",
+    "success_count": 0,
+    "failure_count": 0,
+    "verified_gate": false,
+    "created_at": "2026-11-18T00:56:58.528603+00:00",
+    "last_used_at": "2026-11-18T00:56:58.528603+00:00",
+    "status": "candidate",
+    "fitness": 0.4,
+    "parent_id": "gene-bm25-corpus-idf-cjk-bigrams-3x-field-weigh",
+    "generation": 2,
+    "mutation_reason": "Gen-4 scale and Pareto efficiency optimization",
+    "contributors": [
+      "ir-specialist-agent",
+      "performance-optimizer-agent"
+    ],
+    "best_duration_ms": 0.0
   }
 ]

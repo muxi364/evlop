@@ -329,6 +329,7 @@ def main(argv: list[str] | None = None, root_dir: Path | None = None) -> int:
                 created_at=now_iso,
                 last_used_at=now_iso,
                 contributors=[agent_id],
+                best_duration_ms=last_v.duration_ms if (is_verified and last_v) else 0.0,
             )
             genes.append(new_gene)
             governed = govern_genes(genes, cfg)
@@ -371,6 +372,7 @@ def main(argv: list[str] | None = None, root_dir: Path | None = None) -> int:
                 generation=parent.generation + 1,
                 mutation_reason=args.reason.strip(),
                 contributors=sorted(set(parent.contributors) | {agent_id}),
+                best_duration_ms=last_v.duration_ms if (is_verified and last_v) else 0.0,
             )
             genes.append(child_gene)
             governed = govern_genes(genes, cfg)
