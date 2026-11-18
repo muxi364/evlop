@@ -1,0 +1,8 @@
+{
+  "command": "python -m unittest discover -s . -p test_interval_engine.py -v",
+  "exit_code": 0,
+  "passed": true,
+  "timestamp": "2026-11-18T05:10:04.037850+00:00",
+  "output_snippet": "test_export_schedule_report (test_interval_engine.TestIntervalEngine.test_export_schedule_report) ... ok\ntest_solve_max_net_payout_basic (test_interval_engine.TestIntervalEngine.test_solve_max_net_payout_basic) ... ok\ntest_solve_max_net_payout_empty (test_interval_engine.TestIntervalEngine.test_solve_max_net_payout_empty) ... ok\ntest_solve_max_net_payout_single (test_interval_engine.TestIntervalEngine.test_solve_max_net_payout_single) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.041s\n\nOK",
+  "duration_ms": 802.58
+}

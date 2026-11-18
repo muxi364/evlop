@@ -1,0 +1,134 @@
+[
+  {
+    "id": "gene-seed-algorithmic-complexity",
+    "title": "Enforce O(N) / O(1) Algorithmic Complexity and Pre-Compiled Invariants",
+    "category": "architecture",
+    "trigger": "Implementing loops, search, reconciliation, rate limiting, or data processing",
+    "strategy": "Use hash/dict/set indexes or monotonic deques for O(1)/O(N) lookup; hoist re.compile() and file I/O outside loops; benchmark throughput.",
+    "anti_pattern": "Writing O(N^2) nested scans, calling re.compile() or Path.read_text() inside loops.",
+    "success_count": 3,
+    "failure_count": 0,
+    "verified_gate": true,
+    "created_at": "2026-11-18T05:06:38.048803+00:00",
+    "last_used_at": "2026-11-18T05:06:38.048803+00:00",
+    "status": "promoted",
+    "fitness": 2.1327,
+    "parent_id": "",
+    "generation": 1,
+    "mutation_reason": "",
+    "contributors": [
+      "evlop-seed-genome"
+    ],
+    "best_duration_ms": 5.0
+  },
+  {
+    "id": "gene-seed-numerical-and-boundary-safety",
+    "title": "Enforce Exact Numerical Precision, Explicit UTF-8 I/O, and Boundary Guards",
+    "category": "debugging",
+    "trigger": "Financial/rate math, file I/O, or handling empty/None/concurrent inputs",
+    "strategy": "Use decimal.Decimal with ROUND_HALF_UP for exact rates/money, pass encoding='utf-8' to all file/subprocess I/O, and guard empty/boundary inputs.",
+    "anti_pattern": "Using binary float for exact decimals, omitting encoding='utf-8', or writing bare except: pass blocks.",
+    "success_count": 3,
+    "failure_count": 0,
+    "verified_gate": true,
+    "created_at": "2026-11-18T05:06:38.048803+00:00",
+    "last_used_at": "2026-11-18T05:06:38.048803+00:00",
+    "status": "promoted",
+    "fitness": 2.1324,
+    "parent_id": "",
+    "generation": 1,
+    "mutation_reason": "",
+    "contributors": [
+      "evlop-seed-genome"
+    ],
+    "best_duration_ms": 8.0
+  },
+  {
+    "id": "gene-seed-deterministic-verification-and-ast-audit",
+    "title": "Enforce Deterministic Test Verification and AST Quality Gate Before Completion",
+    "category": "testing",
+    "trigger": "Completing any feature, bugfix, or refactoring task",
+    "strategy": "Write adversarial unit tests (boundary, concurrency, scale), run `evlop verify --quality-gate <path>`, and require 0 test failures and AST quality score >= 90.",
+    "anti_pattern": "Claiming completion based on reading diffs without running `evlop verify` and `evlop audit`.",
+    "success_count": 3,
+    "failure_count": 0,
+    "verified_gate": true,
+    "created_at": "2026-11-18T05:06:38.048803+00:00",
+    "last_used_at": "2026-11-18T05:06:38.048803+00:00",
+    "status": "promoted",
+    "fitness": 2.1322,
+    "parent_id": "",
+    "generation": 1,
+    "mutation_reason": "",
+    "contributors": [
+      "evlop-seed-genome"
+    ],
+    "best_duration_ms": 10.0
+  },
+  {
+    "id": "gene-seed-subagent-isolation-and-dag-waves",
+    "title": "Enforce Subagent Context Isolation and Topological DAG Wave Concurrency",
+    "category": "workflow",
+    "trigger": "Exploring >5 unfamiliar files or orchestrating multi-module agent workflows",
+    "strategy": "Isolate broad file exploration inside read-only subagents and execute independent multi-agent tasks in topological parallel waves via `evlop dag run`.",
+    "anti_pattern": "Dumping raw multi-file search outputs into the primary context window or running independent agents sequentially.",
+    "success_count": 3,
+    "failure_count": 0,
+    "verified_gate": true,
+    "created_at": "2026-11-18T05:06:38.048803+00:00",
+    "last_used_at": "2026-11-18T05:06:38.048803+00:00",
+    "status": "promoted",
+    "fitness": 2.132,
+    "parent_id": "",
+    "generation": 1,
+    "mutation_reason": "",
+    "contributors": [
+      "evlop-seed-genome"
+    ],
+    "best_duration_ms": 12.0
+  },
+  {
+    "id": "gene-o-n-log-n-bisect-dp-for-weighted-interval",
+    "title": "O(N log N) Bisect DP for Weighted Interval Scheduling",
+    "category": "architecture",
+    "trigger": "Nested loop DP over intervals triggers AST-PERF-NESTED-LOOP and is slow on N=5000",
+    "strategy": "Sort intervals by end time, extract end_times list, and use bisect.bisect_right(end_times, start_time) in a single O(N log N) loop",
+    "anti_pattern": "Blindly guessing without verification",
+    "success_count": 1,
+    "failure_count": 0,
+    "verified_gate": true,
+    "created_at": "2026-11-18T05:06:40.516845+00:00",
+    "last_used_at": "2026-11-18T05:07:29.654362+00:00",
+    "status": "promoted",
+    "fitness": 1.4031,
+    "parent_id": "",
+    "generation": 1,
+    "mutation_reason": "",
+    "contributors": [
+      "rsi-scaffold-seed"
+    ],
+    "best_duration_ms": 190.05
+  },
+  {
+    "id": "gene-resolve-indentationerror-in-verification-g",
+    "title": "Resolve IndentationError in verification gate",
+    "category": "debugging",
+    "trigger": "IndentationError IndentationError: unexpected indent",
+    "strategy": "Guard against `IndentationError` (IndentationError: unexpected indent) and verify with `python -m unittest discover -s . -p test_interval_engine.py -v`",
+    "anti_pattern": "Unchecked condition causing IndentationError",
+    "success_count": 1,
+    "failure_count": 0,
+    "verified_gate": true,
+    "created_at": "2026-11-18T05:10:04.069874+00:00",
+    "last_used_at": "2026-11-18T05:10:04.069874+00:00",
+    "status": "promoted",
+    "fitness": 1.3839,
+    "parent_id": "",
+    "generation": 1,
+    "mutation_reason": "",
+    "contributors": [
+      "auto-evolve-agent"
+    ],
+    "best_duration_ms": 802.58
+  }
+]
