@@ -35,6 +35,9 @@
 | **ADAS** | *Automated Design of Agentic Systems* (Hu et al., ICLR 2025, `arXiv:2408.08435`) | 元智能体（Meta-Agent）在代码空间自动搜索、评估并演进新的 Agent 拓扑与规则 | **[P] Persist**：`evlop evolve` 自动重写宿主 Agent 的 `AGENTS.md` / `CLAUDE.md` 指令层 |
 | **Darwin Gödel Machine (DGM)** | *Darwin Gödel Machine: Open-Ended Evolution of Self-Improving Agents* (Sakana AI & Academic Collaborators, 2025–2026) | 冻结基座模型权重，用经验基准（SWE-bench）替代哥德尔形式化证明，递归重写 Agent 自身脚手架代码并维护谱系树，**将 SWE-bench 从 20.0% 自主演进至 50.0%** | **[V] + [O] + [P]**：经验适应度门禁 + 谱系归档（防局部最优陷阱） |
 | **AlphaEvolve** | *AlphaEvolve: A Gemini-Powered Coding Agent for Designing Advanced Algorithms* (Google DeepMind, 2025–2026) | 结合进化搜索与确定性评估器（编译器/性能剖析器），自主发现打破 56 年 Strassen 记录的 $4 \times 4$ 复数矩阵乘法算法并优化数据中心调度 | **[V] Verify & [O] Optimize**：零容错确定性验证评估器驱动的代码与策略演化 |
+| **HarnessPro (RSI + Pareto)** | *HarnessPro: Recursive Harness Self-Improvement with Pareto Optimization for Performance-Cost Trade-offs* (`arXiv:2610.26770`, ICLR 2027 Sub, GitHub: `pzs19/HarnessPro`) | 无需人工标注，基于执行轨迹递归演进 Agent 脚手架（Harness），构建 **性能-延迟-成本三维帕累托前沿（Lite / Balanced / Heavy）** | **[O] & [P] (`evlop rsi`)**：三维非支配排序、超体积（Hypervolume）单调扩张与三模式自动切换 |
+| **ParetoSaddler** | *ParetoSaddler: Pareto-Guided Optimization of Agent Harnesses for Quality and Cost* (`arXiv:2611.02079`, Microsoft `AutoSaddler`) | 将“中间代际候选保留（帕累托前沿支撑）”与“最终部署选择（拐点优选）”解耦，防止过早丢弃后续递归自改进所需的跳板策略（Stepping Stones） | **[O] (`compute_pareto_frontier`)**：完整保留 $\mathcal{P}^*$ 非支配前沿并计算 3D 乌托邦拐点距离 |
+| **GEPA / STOP / Gödel Agent** | • *GEPA: Reflective Prompt Evolution Can Outperform RL*<br>• *STOP: Self-Taught Optimizer* (`microsoft/stop`)<br>• *Gödel Agent* (`Arvid-pku/Godel_Agent`) & *Google RRSI* (`google-research/rrsi`) | 在帕累托前沿上进行遗传交叉重组（GEPA Crossover）与自指涉脚手架代码重写（Self-Referential Scaffold Rewriting），用脚手架进化推动冻结基座模型能力跃迁 | **[O] (`gepa_pareto_crossover`)**：高准度父代 $\times$ 低延迟父代交叉重组 + RRSI 超体积不退化正则门禁 |
 
 ---
 

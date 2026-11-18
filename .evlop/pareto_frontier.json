@@ -1,0 +1,96 @@
+{
+  "generations_executed": 3,
+  "operating_mode": "balanced",
+  "hypervolume_history": [
+    83.355,
+    89.3974,
+    93.6074,
+    96.2301
+  ],
+  "hypervolume_gain_pct": 15.45,
+  "pareto_frontier_size": 1,
+  "pareto_frontier": [
+    {
+      "id": "rsi-gen3-fast",
+      "title": "Gen-3 GEPA Hybrid Scaffold (rsi-gen2-utopia x rsi-gen2-fast)",
+      "quality": 100.0,
+      "latency_ms": 8.69,
+      "cost_tokens": 67,
+      "generation": 3,
+      "parents": [
+        "rsi-gen2-utopia",
+        "rsi-gen2-fast"
+      ],
+      "strategy": "[Pareto-Optimal RSI Gen-3] Fuse accuracy invariants of 'Gen-2 GEPA Hybrid Scaffold (rsi-gen1-utopia x rsi-gen1-fast)' with O(1)/O(N) fast-path execution of 'Gen-2 GEPA Hybrid Scaffold (rsi-gen1-fast x rsi-gen0-lite)' (Quality=100.0%, Latency=8.69ms, Cost=67 tokens).",
+      "trigger": "Complex multi-objective coding, reasoning, or agentic workflow optimization",
+      "utopia_distance": 0.0,
+      "operating_badge": "BALANCED-KNEE (Pareto Utopia Knee-Point)"
+    }
+  ],
+  "operating_modes": {
+    "heavy": {
+      "id": "rsi-gen3-fast",
+      "title": "Gen-3 GEPA Hybrid Scaffold (rsi-gen2-utopia x rsi-gen2-fast)",
+      "quality": 100.0,
+      "latency_ms": 8.69,
+      "cost_tokens": 67,
+      "generation": 3,
+      "parents": [
+        "rsi-gen2-utopia",
+        "rsi-gen2-fast"
+      ],
+      "strategy": "[Pareto-Optimal RSI Gen-3] Fuse accuracy invariants of 'Gen-2 GEPA Hybrid Scaffold (rsi-gen1-utopia x rsi-gen1-fast)' with O(1)/O(N) fast-path execution of 'Gen-2 GEPA Hybrid Scaffold (rsi-gen1-fast x rsi-gen0-lite)' (Quality=100.0%, Latency=8.69ms, Cost=67 tokens).",
+      "trigger": "Complex multi-objective coding, reasoning, or agentic workflow optimization",
+      "utopia_distance": 0.0,
+      "operating_badge": "BALANCED-KNEE (Pareto Utopia Knee-Point)"
+    },
+    "balanced": {
+      "id": "rsi-gen3-fast",
+      "title": "Gen-3 GEPA Hybrid Scaffold (rsi-gen2-utopia x rsi-gen2-fast)",
+      "quality": 100.0,
+      "latency_ms": 8.69,
+      "cost_tokens": 67,
+      "generation": 3,
+      "parents": [
+        "rsi-gen2-utopia",
+        "rsi-gen2-fast"
+      ],
+      "strategy": "[Pareto-Optimal RSI Gen-3] Fuse accuracy invariants of 'Gen-2 GEPA Hybrid Scaffold (rsi-gen1-utopia x rsi-gen1-fast)' with O(1)/O(N) fast-path execution of 'Gen-2 GEPA Hybrid Scaffold (rsi-gen1-fast x rsi-gen0-lite)' (Quality=100.0%, Latency=8.69ms, Cost=67 tokens).",
+      "trigger": "Complex multi-objective coding, reasoning, or agentic workflow optimization",
+      "utopia_distance": 0.0,
+      "operating_badge": "BALANCED-KNEE (Pareto Utopia Knee-Point)"
+    },
+    "lite": {
+      "id": "rsi-gen3-fast",
+      "title": "Gen-3 GEPA Hybrid Scaffold (rsi-gen2-utopia x rsi-gen2-fast)",
+      "quality": 100.0,
+      "latency_ms": 8.69,
+      "cost_tokens": 67,
+      "generation": 3,
+      "parents": [
+        "rsi-gen2-utopia",
+        "rsi-gen2-fast"
+      ],
+      "strategy": "[Pareto-Optimal RSI Gen-3] Fuse accuracy invariants of 'Gen-2 GEPA Hybrid Scaffold (rsi-gen1-utopia x rsi-gen1-fast)' with O(1)/O(N) fast-path execution of 'Gen-2 GEPA Hybrid Scaffold (rsi-gen1-fast x rsi-gen0-lite)' (Quality=100.0%, Latency=8.69ms, Cost=67 tokens).",
+      "trigger": "Complex multi-objective coding, reasoning, or agentic workflow optimization",
+      "utopia_distance": 0.0,
+      "operating_badge": "BALANCED-KNEE (Pareto Utopia Knee-Point)"
+    }
+  },
+  "selected_pareto_optimal": {
+    "id": "rsi-gen3-fast",
+    "title": "Gen-3 GEPA Hybrid Scaffold (rsi-gen2-utopia x rsi-gen2-fast)",
+    "quality": 100.0,
+    "latency_ms": 8.69,
+    "cost_tokens": 67,
+    "generation": 3,
+    "parents": [
+      "rsi-gen2-utopia",
+      "rsi-gen2-fast"
+    ],
+    "strategy": "[Pareto-Optimal RSI Gen-3] Fuse accuracy invariants of 'Gen-2 GEPA Hybrid Scaffold (rsi-gen1-utopia x rsi-gen1-fast)' with O(1)/O(N) fast-path execution of 'Gen-2 GEPA Hybrid Scaffold (rsi-gen1-fast x rsi-gen0-lite)' (Quality=100.0%, Latency=8.69ms, Cost=67 tokens).",
+    "trigger": "Complex multi-objective coding, reasoning, or agentic workflow optimization",
+    "utopia_distance": 0.0,
+    "operating_badge": "BALANCED-KNEE (Pareto Utopia Knee-Point)"
+  }
+}

@@ -114,6 +114,9 @@ python -m evlop lineage --mermaid --out docs/LINEAGE.md
 python -m evlop dag run templates/homerail-heterogeneous-dag.json --run-id demo-rail-001
 python -m evlop scorecard demo-rail-001
 python -m evlop replay demo-rail-001 --from-node deterministic_gate
+
+# Step 8 [RSI + Pareto Frontier Mode - 递归脚手架自改进与三维帕累托最优演进 (Quality x Latency x Cost)]:
+python -m evlop rsi --generations 3 --mode balanced --out .evlop/pareto_frontier.json
 ```
 
 ### 3. 六大全系统整体挂载模式（Whole-System Mounting Matrix — 适配任意宿主与框架）

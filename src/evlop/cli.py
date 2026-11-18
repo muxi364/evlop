@@ -15,6 +15,7 @@ from evlop.dag_rail import DagCycleError, execute_dag_rail
 from evlop.fitness import govern_genes
 from evlop.models import Episode, Gene, slugify_gene_id, utc_now_iso
 from evlop.quality_gate import audit_python_path
+from evlop.rsi_pareto import run_rsi_scaffold_evolution
 from evlop.store import EvlopStore
 from evlop.verifier import extract_failure_diagnosis, run_verification
 
@@ -176,6 +177,19 @@ def _build_parser() -> argparse.ArgumentParser:
     p_status = sub.add_parser("status", help="Inspect EVLOP genome health, swarm contributors, and lineage depth")
     p_status.add_argument("--json", action="store_true", help="Output status as JSON")
 
+    p_rsi = sub.add_parser(
+        "rsi",
+        help="[RSI + Pareto Mode] Run Recursive Scaffold Self-Improvement to evolve the 3D Pareto Frontier (Quality x Latency x Cost)",
+    )
+    p_rsi.add_argument("--generations", type=int, default=3, help="Number of RSI generations to evolve")
+    p_rsi.add_argument(
+        "--mode",
+        default="balanced",
+        choices=["heavy", "balanced", "lite"],
+        help="HarnessPro operating mode selection on the Pareto Frontier",
+    )
+    p_rsi.add_argument("--out", default="", help="Optional path to write JSON Pareto report")
+
     sub.add_parser("mcp", help="Run zero-dependency MCP JSON-RPC 2.0 server over stdio")
 
     return parser
@@ -213,6 +227,27 @@ def main(argv: list[str] | None = None, root_dir: Path | None = None) -> int:
         from evlop.mcp_server import run_stdio_server
 
         return run_stdio_server(workspace)
+
+    if args.subcommand == "rsi":
+        report = run_rsi_scaffold_evolution(
+            workspace=workspace,
+            generations=args.generations,
+            mode=args.mode,
+        )
+        if args.out:
+            out_p = Path(args.out)
+            if not out_p.is_absolute():
+                out_p = (workspace / out_p).resolve()
+            out_p.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        sel = report["selected_pareto_optimal"]
+        hv_hist = report["hypervolume_history"]
+        _safe_print(
+            f"[EVLOP RSI Pareto-Optimal] Generations: {args.generations} | "
+            f"Hypervolume: {hv_hist[0]:.2f} -> {hv_hist[-1]:.2f} (+{report['hypervolume_gain_pct']}%) | "
+            f"Selected ({args.mode.upper()}): {sel['title']} "
+            f"[Quality={sel['quality']}%, Latency={sel['latency_ms']}ms, Cost={sel['cost_tokens']} tok]"
+        )
+        return 0
 
     if args.subcommand == "dag":
         spec_path = Path(args.spec)
